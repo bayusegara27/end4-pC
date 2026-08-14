@@ -225,6 +225,15 @@ Singleton {
                 property bool showGrid: true
                 property bool showSnapLines: true
                 property JsonObject widgets: JsonObject {
+                    property JsonObject discordVoice: JsonObject {
+                        property bool enable: true
+                        property bool showOnlyWhenLocked: false
+                        property string placementStrategy: "free"
+                        property real x: 200
+                        property real y: 200
+                        property string sizeMode: "1x2"
+                        property int maxVisibleMembers: 4
+                    }
                     property JsonObject clock: JsonObject {
                         property bool enable: true
                         property bool showOnlyWhenLocked: false

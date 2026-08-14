@@ -106,6 +106,7 @@ AbstractBackgroundWidget {
             source: bgImage
             radius: 48
             layer.enabled: true
+            visible: !GlobalStates.isLiveWallpaperRunning
             layer.effect: OpacityMask {
                 maskSource: Rectangle {
                     width: outerRect.width
@@ -119,7 +120,7 @@ AbstractBackgroundWidget {
             anchors.fill: blurredBg
             radius: Appearance.rounding?.verylarge ?? 30
             color: Appearance.colors.colScrim
-            opacity: 0.1
+            opacity: GlobalStates.isLiveWallpaperRunning ? 0.4 : 0.1
         }
 
         Rectangle {

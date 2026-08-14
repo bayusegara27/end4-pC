@@ -35,7 +35,7 @@ Rectangle {
         StyledText {
             id: keyText
             anchors.centerIn: parent
-            font.family: Appearance.font.family.monospace
+            font.family: Appearance.font.family.main
             font.pixelSize: root.pixelSize
             text: key
         }

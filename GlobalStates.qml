@@ -43,7 +43,6 @@ Singleton {
     property bool dropShelfOpen: false
     property real dropShelfX: 0
     property real dropShelfY: 0
-
     readonly property var hotCornerOptions: [
         { displayName: Translation.tr("None"),                  value: "none" },
         { displayName: Translation.tr("Left Sidebar"),           value: "sidebarLeftOpen" },
@@ -63,6 +62,25 @@ Singleton {
         root[name] = !root[name];
     }
     
+    property bool isLiveWallpaperRunning: false
+
+    Process {
+        id: liveWallpaperCheck
+        running: true
+        command: ["pgrep", "-f", "linux-wallpaperengine|mpvpaper"]
+        stdout: StdioCollector {
+            onStreamFinished: {
+                root.isLiveWallpaperRunning = text.trim().length > 0
+            }
+        }
+    }
+
+    Timer {
+        interval: 1500
+        running: true
+        repeat: true
+        onTriggered: liveWallpaperCheck.running = true
+    }
     onSidebarRightOpenChanged: {
         if (GlobalStates.sidebarRightOpen) {
             Notifications.timeoutAll();
