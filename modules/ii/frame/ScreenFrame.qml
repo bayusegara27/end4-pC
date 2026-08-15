@@ -11,7 +11,7 @@ Scope {
     id: root
     property real frameThickness: Config.options.bar.frameThickness
     property color frameColor: Appearance.getColorFromName(Config.options.bar.frameColor)
-
+    readonly property bool centerOnly: Config.options.bar.layouts.leftLayout.length === 0 && Config.options.bar.layouts.rightLayout.length === 0
     readonly property bool hideBarSideFrame: Config.options.bar.cornerStyle === 0
     readonly property string barPosition: {
         if (Config.options.bar.vertical)
@@ -21,7 +21,9 @@ Scope {
 
     function frameVisibleFor(side) {
         if (!Config.options.bar.showFrame) return false
-        if (root.hideBarSideFrame && side === root.barPosition) return false
+        if (Config.options.bar.cornerStyle === 0 && side === root.barPosition) {
+            return root.centerOnly
+        }
         return true
     }
 
@@ -29,7 +31,7 @@ Scope {
         id: cornerPanelWindow
         property var corner
 
-        visible: Config.options.bar.showFrame
+        visible: Config.options.bar.showFrame 
         exclusionMode: ExclusionMode.Ignore
         mask: Region {}
         WlrLayershell.namespace: "quickshell:screenframe-corner"

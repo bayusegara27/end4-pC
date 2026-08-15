@@ -133,7 +133,9 @@ Scope {
                         visible: barContent.centerOnly && showBarBackground && Config.options.bar.cornerStyle === 0 && (!Config.options.bar.autoHide.enable || barRoot.mustShow)
                         x: barContent.centerPillX - implicitSize
                         implicitSize: Appearance.rounding.screenRounding
-                        color: Appearance.colors.colLayer0
+                        color: Config.options.bar.followFrameColor
+                            ? Appearance.getColorFromName(Config.options.bar.frameColor)
+                            : Appearance.colors.colLayer0
                         corner: RoundCorner.CornerEnum.TopRight
 
                         states: State {
@@ -201,7 +203,9 @@ Scope {
                         visible: barContent.centerOnly && showBarBackground && Config.options.bar.cornerStyle === 0 && (!Config.options.bar.autoHide.enable || barRoot.mustShow)
                         x: barContent.centerPillX + barContent.centerPillWidth
                         implicitSize: Appearance.rounding.screenRounding
-                        color: Appearance.colors.colLayer0
+                        color: Config.options.bar.followFrameColor
+                            ? Appearance.getColorFromName(Config.options.bar.frameColor)
+                            : Appearance.colors.colLayer0
                         corner: RoundCorner.CornerEnum.TopLeft
 
                         states: State {

@@ -741,7 +741,7 @@ Singleton {
             }
 
             property JsonObject custom: JsonObject {
-                property string distroIcon: ""
+                property string distroIcon: "spark"
                 property bool colorizeIcon: true
             }
 

@@ -101,10 +101,12 @@ AbstractBackgroundWidget {
                         Layout.fillWidth: true
                         spacing: -2
                         StyledText {
+                            Layout.fillWidth: true
                             font.pixelSize: Appearance.font.pixelSize.normal
                             font.weight: Font.Medium
                             color: Appearance.colors.colOnPrimaryContainer
                             text: root.localCityName
+                            elide: Text.ElideRight
                         }
                     }
                     Item { Layout.fillWidth: true }
