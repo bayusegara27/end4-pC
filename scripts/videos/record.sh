@@ -62,7 +62,7 @@ for ((i=0;i<${#ARGS[@]};i++)); do
         if (( i+1 < ${#ARGS[@]} )); then
             MANUAL_REGION="${ARGS[i+1]}"
         else
-            notify-send "Recording cancelled" "No region specified for --region" -a 'Recorder' & disown
+            notify-send "Recording cancelled" "No region specified for --region" -a 'Recorder' -i 'screen_record' & disown
             exit 1
         fi
     elif [[ "${ARGS[i]}" == "--sound" ]]; then
@@ -74,18 +74,16 @@ for ((i=0;i<${#ARGS[@]};i++)); do
     fi
 done
 
-# Stop existing recording if already running
+# Stop existing recording if already running (SIGINT triggers finalization in main process)
 if pgrep -f "gpu-screen-recorder" > /dev/null; then
-    notify-send "Recording Stopped" "Video saved to $RECORDING_DIR" -a 'Recorder' &
     pkill -SIGINT -f "gpu-screen-recorder" 2>/dev/null || true
-    set_recording_state false
     exit 0
 fi
 
 OUT_FILE="${RECORDING_DIR}/recording_$(getdate).mp4"
 
 if command -v gpu-screen-recorder &>/dev/null; then
-    notify-send "Starting recording (GPU NVENC)" "$(basename "$OUT_FILE")" -a 'Recorder' & disown
+    # Silent start: zero toast popups to avoid polluting video frames
     set_recording_state true
     AUDIO_ARGS=()
     if [[ $SOUND_FLAG -eq 1 ]]; then
@@ -100,7 +98,7 @@ if command -v gpu-screen-recorder &>/dev/null; then
     else
         if [[ -z "$MANUAL_REGION" ]]; then
             if ! region="$(slurp -f "%wx%h+%x+%y" 2>&1)"; then
-                notify-send "Recording cancelled" "Selection was cancelled" -a 'Recorder' & disown
+                notify-send "Recording cancelled" "Selection was cancelled" -a 'Recorder' -i 'screen_record' & disown
                 set_recording_state false
                 exit 1
             fi
@@ -110,6 +108,25 @@ if command -v gpu-screen-recorder &>/dev/null; then
         gpu-screen-recorder -w "$region" -f 60 "${AUDIO_ARGS[@]}" -o "$OUT_FILE"
     fi
     set_recording_state false
+
+    if [[ -f "$OUT_FILE" ]]; then
+        # Generate lightweight static video thumbnail for instant notification preview
+        THUMB_DIR="/tmp/quickshell/media/thumbnails"
+        mkdir -p "$THUMB_DIR"
+        THUMB_FILE="${THUMB_DIR}/thumb_$(basename "$OUT_FILE" .mp4).png"
+        
+        if command -v ffmpegthumbnailer &>/dev/null; then
+            ffmpegthumbnailer -i "$OUT_FILE" -o "$THUMB_FILE" -s 640 -q 8 2>/dev/null || true
+        elif command -v ffmpeg &>/dev/null; then
+            ffmpeg -y -ss 0.5 -i "$OUT_FILE" -vframes 1 -q:v 2 "$THUMB_FILE" 2>/dev/null || true
+        fi
+
+        if [[ -f "$THUMB_FILE" ]]; then
+            notify-send "Recording Saved" "Video saved to $OUT_FILE" -a 'Recorder' -i "$THUMB_FILE" &
+        else
+            notify-send "Recording Saved" "Video saved to $OUT_FILE" -a 'Recorder' -i 'screen_record' &
+        fi
+    fi
 else
-    notify-send "Recording Error" "gpu-screen-recorder is not installed." -a 'Recorder' & disown
+    notify-send "Recording Error" "gpu-screen-recorder is not installed." -a 'Recorder' -i 'screen_record' & disown
 fi

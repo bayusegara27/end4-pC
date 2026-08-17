@@ -6,99 +6,93 @@ import Quickshell
 import Quickshell.Widgets
 import Quickshell.Services.Notifications
 
-MaterialShape { // App icon
+Item {
     id: root
     property var appIcon: ""
     property var summary: ""
+    property var appName: ""
+    property var category: ""
     property var urgency: NotificationUrgency.Normal
-    property bool isUrgent: urgency === NotificationUrgency.Critical
+    property bool isUrgent: urgency === NotificationUrgency.Critical.toString() || urgency === NotificationUrgency.Critical || urgency === "2"
     property var image: ""
-    property real materialIconScale: 0.57
-    property real appIconScale: 0.8
-    property real smallAppIconScale: 0.49
-    property real materialIconSize: implicitSize * materialIconScale
-    property real appIconSize: implicitSize * appIconScale
-    property real smallAppIconSize: implicitSize * smallAppIconScale
 
-    implicitSize: 38 * scale
-    property list<var> urgentShapes: [
-        MaterialShape.Shape.VerySunny,
-        MaterialShape.Shape.SoftBurst,
-    ]
-    shape: isUrgent ? urgentShapes[Math.floor(Math.random() * urgentShapes.length)] : MaterialShape.Shape.Circle
+    implicitWidth: 36
+    implicitHeight: 36
 
-    color: isUrgent ? Appearance.colors.colPrimaryContainer : Appearance.colors.colSecondaryContainer
-    Loader {
-        id: materialSymbolLoader
-        active: root.appIcon == ""
-        anchors.fill: parent
-        sourceComponent: MaterialSymbol {
-            text: {
-                const defaultIcon = NotificationUtils.findSuitableMaterialSymbol("")
-                const guessedIcon = NotificationUtils.findSuitableMaterialSymbol(root.summary)
-                return (root.urgency == NotificationUrgency.Critical && guessedIcon === defaultIcon) ?
-                    "priority_high" : guessedIcon
-            }
-            anchors.fill: parent
-            color: isUrgent ? Appearance.colors.colOnPrimaryContainer : Appearance.colors.colOnSecondaryContainer
-            iconSize: root.materialIconSize
-            horizontalAlignment: Text.AlignHCenter
-            verticalAlignment: Text.AlignVCenter
-        }
+    // Resolve whether icon or image is a valid existing path
+    readonly property string resolvedIconPath: {
+        if (!root.appIcon || root.appIcon === "") return "";
+        // If it starts with file:// or absolute path
+        if (root.appIcon.startsWith("file://") || root.appIcon.startsWith("/")) return root.appIcon;
+        // Check if quickshell finds it in system theme
+        const p = Quickshell.iconPath(root.appIcon);
+        if (p && p !== "" && !p.includes("image-missing")) return p;
+        return "";
     }
-    Loader {
-        id: appIconLoader
-        active: root.image == "" && root.appIcon != ""
-        anchors.centerIn: parent
-        sourceComponent: IconImage {
-            id: appIconImage
-            implicitSize: root.appIconSize
+
+    readonly property bool hasValidImage: {
+        if (!root.image || root.image === "") return false;
+        if (root.image.startsWith("image://icon/") && root.image.includes("missing")) return false;
+        return true;
+    }
+
+    readonly property bool hasValidIcon: root.resolvedIconPath !== ""
+
+    // Container background circle
+    Rectangle {
+        id: bgCircle
+        anchors.fill: parent
+        radius: width / 2
+        color: root.isUrgent ? 
+            ColorUtils.transparentize(Appearance.colors.colPrimary, 0.2) : 
+            Appearance.colors.colLayer3
+        border.width: 1
+        border.color: root.isUrgent ? 
+            Appearance.colors.colPrimary : 
+            ColorUtils.transparentize(Appearance.colors.colOutline, 0.6)
+
+        // Case 1: Display Image if valid (e.g. contact avatar or custom image)
+        Image {
+            id: customImage
+            visible: root.hasValidImage
+            anchors.fill: parent
+            anchors.margins: 1
+            source: root.image
+            fillMode: Image.PreserveAspectCrop
             asynchronous: true
-            source: Quickshell.iconPath(root.appIcon, "image-missing")
+            clip: true
+            layer.enabled: true
+            layer.effect: OpacityMask {
+                maskSource: Rectangle {
+                    width: customImage.width
+                    height: customImage.height
+                    radius: width / 2
+                }
+            }
         }
-    }
-    Loader {
-        id: notifImageLoader
-        active: root.image != ""
-        anchors.fill: parent
-        sourceComponent: Item {
-            anchors.fill: parent
-            Image {
-                id: notifImage
-                anchors.fill: parent
-                readonly property int size: parent.width
 
-                source: root.image
-                fillMode: Image.PreserveAspectCrop
-                cache: false
-                antialiasing: true
-                asynchronous: true
+        // Case 2: Display System IconImage if resolved successfully
+        IconImage {
+            id: systemIcon
+            visible: !root.hasValidImage && root.hasValidIcon
+            anchors.centerIn: parent
+            implicitWidth: 22
+            implicitHeight: 22
+            asynchronous: true
+            source: root.resolvedIconPath
+        }
 
-                width: size
-                height: size
-                sourceSize.width: size
-                sourceSize.height: size
-
-                layer.enabled: true
-                layer.effect: OpacityMask {
-                    maskSource: Rectangle {
-                        width: notifImage.size
-                        height: notifImage.size
-                        radius: Appearance.rounding.full
-                    }
-                }
+        // Case 3: Fallback to crisp Material Symbol (Prevents broken magenta checkerboard!)
+        MaterialSymbol {
+            id: fallbackMaterialIcon
+            visible: !root.hasValidImage && !root.hasValidIcon
+            anchors.centerIn: parent
+            text: {
+                if (root.isUrgent) return "warning";
+                return NotificationUtils.findSuitableMaterialSymbol(root.summary, root.appName, root.category);
             }
-            Loader {
-                id: notifImageAppIconLoader
-                active: root.appIcon != ""
-                anchors.bottom: parent.bottom
-                anchors.right: parent.right
-                sourceComponent: IconImage {
-                    implicitSize: root.smallAppIconSize
-                    asynchronous: true
-                    source: Quickshell.iconPath(root.appIcon, "image-missing")
-                }
-            }
+            iconSize: 20
+            color: root.isUrgent ? Appearance.colors.colOnPrimary : Appearance.colors.colPrimary
         }
     }
 }

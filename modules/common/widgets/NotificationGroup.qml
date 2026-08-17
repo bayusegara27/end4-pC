@@ -7,10 +7,9 @@ import Quickshell
 import Quickshell.Services.Notifications
 
 /**
- * A group of notifications from the same app.
- * Similar to Android's notifications
+ * Modern notification card / group (Clean Material 3 & macOS glass aesthetic)
  */
-MouseArea { // Notification group area
+MouseArea {
     id: root
     property var notificationGroup
     property var notifications: notificationGroup?.notifications ?? []
@@ -18,12 +17,16 @@ MouseArea { // Notification group area
     property bool multipleNotifications: notificationCount > 1
     property bool expanded: false
     property bool popup: false
-    property real padding: 10
-    implicitHeight: background.implicitHeight
+    property real padding: 12
 
-    property real dragConfirmThreshold: 70 // Drag further to discard notification
-    property real dismissOvershoot: 20 // Account for gaps and bouncy animations
-    property var qmlParent: root?.parent?.parent // There's something between this and the parent ListView
+    implicitHeight: background.implicitHeight
+    height: implicitHeight
+
+    readonly property bool isCritical: notifications.some(n => n.urgency === NotificationUrgency.Critical.toString() || n.urgency === "2")
+
+    property real dragConfirmThreshold: 70
+    property real dismissOvershoot: 20
+    property var qmlParent: root?.parent?.parent
     property var parentDragIndex: qmlParent?.dragIndex
     property var parentDragDistance: qmlParent?.dragDistance
     property var dragIndexDiff: Math.abs(parentDragIndex - index)
@@ -33,26 +36,39 @@ MouseArea { // Notification group area
         dragIndexDiff == 2 ? (parentDragDistance * 0.1) : 0
 
     function destroyWithAnimation(left = false) {
-        root.qmlParent.resetDrag()
-        background.anchors.leftMargin = background.anchors.leftMargin; // Break binding
+        if (root.qmlParent && root.qmlParent.resetDrag) root.qmlParent.resetDrag();
+        background.anchors.leftMargin = background.anchors.leftMargin;
         destroyAnimation.left = left;
+        destroyAnimation.discardFromHistory = true;
+        destroyAnimation.running = true;
+    }
+
+    function dismissPopupWithAnimation(left = false) {
+        if (root.qmlParent && root.qmlParent.resetDrag) root.qmlParent.resetDrag();
+        background.anchors.leftMargin = background.anchors.leftMargin;
+        destroyAnimation.left = left;
+        destroyAnimation.discardFromHistory = false;
         destroyAnimation.running = true;
     }
 
     hoverEnabled: true
     onContainsMouseChanged: {
         if (!root.popup) return;
-        if (root.containsMouse) root.notifications.forEach(notif => {
-            Notifications.cancelTimeout(notif.notificationId);
-        });
-        else root.notifications.forEach(notif => {
-            Notifications.timeoutNotification(notif.notificationId);
-        });
+        if (root.containsMouse) {
+            root.notifications.forEach(notif => {
+                Notifications.cancelTimeout(notif.notificationId);
+            });
+        } else {
+            root.notifications.forEach(notif => {
+                Notifications.resumeTimeout(notif.notificationId);
+            });
+        }
     }
 
-    SequentialAnimation { // Drag finish animation
+    SequentialAnimation {
         id: destroyAnimation
         property bool left: true
+        property bool discardFromHistory: false
         running: false
 
         NumberAnimation {
@@ -66,19 +82,21 @@ MouseArea { // Notification group area
         onFinished: () => {
             root.notifications.forEach((notif) => {
                 Qt.callLater(() => {
-                    Notifications.discardNotification(notif.notificationId);
+                    if (destroyAnimation.discardFromHistory || !root.popup) {
+                        Notifications.discardNotification(notif.notificationId);
+                    } else {
+                        Notifications.timeoutNotification(notif.notificationId);
+                    }
                 });
             });
         }
     }
 
     function toggleExpanded() {
-        if (expanded) implicitHeightAnim.enabled = true;
-        else implicitHeightAnim.enabled = false;
         root.expanded = !root.expanded;
     }
 
-    DragManager { // Drag manager
+    DragManager {
         id: dragManager
         anchors.fill: parent
         interactive: !expanded
@@ -91,25 +109,32 @@ MouseArea { // Notification group area
         }
 
         onClicked: (mouse) => {
-            if (mouse.button === Qt.MiddleButton) 
-                root.destroyWithAnimation();
+            if (mouse.button === Qt.MiddleButton) {
+                if (root.popup) root.dismissPopupWithAnimation();
+                else root.destroyWithAnimation();
+            }
         }
 
         onDraggingChanged: () => {
-            if (dragging) {
+            if (dragging && root.qmlParent) {
                 root.qmlParent.dragIndex = root.index ?? root.parent.children.indexOf(root);
             }
         }
 
         onDragDiffXChanged: () => {
-            root.qmlParent.dragDistance = dragDiffX;
+            if (root.qmlParent) root.qmlParent.dragDistance = dragDiffX;
         }
 
         onDragReleased: (diffX, diffY) => {
-            if (Math.abs(diffX) > root.dragConfirmThreshold)
-                root.destroyWithAnimation(diffX < 0);
-            else 
+            if (Math.abs(diffX) > root.dragConfirmThreshold) {
+                if (root.popup) {
+                    root.dismissPopupWithAnimation(diffX < 0);
+                } else {
+                    root.destroyWithAnimation(diffX < 0);
+                }
+            } else {
                 dragManager.resetDrag();
+            }
         }
     }
 
@@ -117,13 +142,22 @@ MouseArea { // Notification group area
         target: background
         visible: popup
     }
-    Rectangle { // Background of the notification
+
+    Rectangle {
         id: background
         anchors.left: parent.left
         width: parent.width
-        color: popup ? Appearance.colors.colBackgroundSurfaceContainer : Appearance.colors.colLayer2
+        color: root.isCritical ? 
+            ColorUtils.transparentize(Appearance.colors.colPrimary, 0.94) : 
+            (popup ? Appearance.colors.colBackgroundSurfaceContainer : Appearance.colors.colLayer2)
         radius: Appearance.rounding.normal
+        clip: true
         anchors.leftMargin: root.xOffset
+
+        border.width: root.isCritical ? 1.5 : 1
+        border.color: root.isCritical ? 
+            Appearance.colors.colPrimary : 
+            ColorUtils.transparentize(Appearance.colors.colOutline, 0.75)
 
         Behavior on anchors.leftMargin {
             enabled: !dragManager.dragging
@@ -133,126 +167,238 @@ MouseArea { // Notification group area
                 easing.bezierCurve: Appearance.animationCurves.expressiveFastSpatial
             }
         }
-        
-        clip: true
-        implicitHeight: root.expanded ? 
-            row.implicitHeight + padding * 2 :
-            Math.min(80, row.implicitHeight + padding * 2)
 
-        Behavior on implicitHeight {
-            id: implicitHeightAnim
-            animation: Appearance.animation.elementMoveFast.numberAnimation.createObject(this)
-        }
+        implicitHeight: mainLayout.implicitHeight + root.padding * 2
+        height: implicitHeight
 
-        RowLayout { // Left column for icon, right column for content
-            id: row
-            anchors.top: parent.top
+        ColumnLayout {
+            id: mainLayout
             anchors.left: parent.left
             anchors.right: parent.right
+            anchors.top: parent.top
             anchors.margins: root.padding
-            spacing: 10
+            spacing: 8
 
-            NotificationAppIcon { // Icons
-                Layout.alignment: Qt.AlignTop
-                Layout.fillWidth: false
-                image: root?.multipleNotifications ? "" : notificationGroup?.notifications[0]?.image ?? ""
-                appIcon: root.notificationGroup?.appIcon
-                summary: root.notificationGroup?.notifications[root.notificationCount - 1]?.summary
-                urgency: root.notifications.some(n => n.urgency === NotificationUrgency.Critical.toString()) ? 
-                    NotificationUrgency.Critical : NotificationUrgency.Normal
-            }
-
-            ColumnLayout { // Content
+            // 1. Unified Card Header (Always shown)
+            RowLayout {
+                id: cardHeader
                 Layout.fillWidth: true
-                spacing: expanded ? (root.multipleNotifications ? 
-                    (notificationGroup?.notifications[root.notificationCount - 1].image != "") ? 35 : 
-                    5 : 0) : 0
-                // spacing: 00
-                Behavior on spacing {
-                    animation: Appearance.animation.elementMoveFast.numberAnimation.createObject(this)
+                implicitHeight: 24
+                spacing: 8
+
+                NotificationAppIcon {
+                    Layout.alignment: Qt.AlignVCenter
+                    implicitWidth: 24
+                    implicitHeight: 24
+                    appIcon: root.notificationGroup?.appIcon || ""
+                    appName: root.notificationGroup?.appName || ""
+                    summary: root.notificationGroup?.notifications[0]?.summary || ""
+                    urgency: root.isCritical ? NotificationUrgency.Critical : NotificationUrgency.Normal
                 }
 
-                Item { // App name (or summary when there's only 1 notif) and time
-                    id: topRow
-                    // spacing: 0
-                    Layout.fillWidth: true
-                    property real fontSize: Appearance.font.pixelSize.smaller
-                    property bool showAppName: root.multipleNotifications
-                    implicitHeight: Math.max(topTextRow.implicitHeight, expandButton.implicitHeight)
+                StyledText {
+                    id: headerAppName
+                    Layout.alignment: Qt.AlignVCenter
+                    verticalAlignment: Text.AlignVCenter
+                    text: root.notificationGroup?.appName || Translation.tr("Notification")
+                    font.pixelSize: Appearance.font.pixelSize.smaller
+                    font.weight: Font.Bold
+                    color: root.isCritical ? Appearance.colors.colPrimary : Appearance.colors.colOnLayer2
+                    elide: Text.ElideRight
+                }
+
+                // Critical status badge (seamless pill in header)
+                Rectangle {
+                    visible: root.isCritical
+                    Layout.alignment: Qt.AlignVCenter
+                    radius: 8
+                    implicitHeight: 18
+                    implicitWidth: critContent.implicitWidth + 10
+                    color: ColorUtils.transparentize(Appearance.colors.colPrimary, 0.8)
 
                     RowLayout {
-                        id: topTextRow
-                        anchors.left: parent.left
-                        anchors.right: expandButton.left
-                        anchors.verticalCenter: parent.verticalCenter
-                        spacing: 5
-                        StyledText {
-                            id: appName
-                            elide: Text.ElideRight
-                            Layout.fillWidth: true
-                            text: (topRow.showAppName ?
-                                notificationGroup?.appName :
-                                notificationGroup?.notifications[0]?.summary) || ""
-                            font.pixelSize: topRow.showAppName ?
-                                topRow.fontSize :
-                                Appearance.font.pixelSize.small
-                            color: topRow.showAppName ?
-                                Appearance.colors.colSubtext :
-                                Appearance.colors.colOnLayer2
+                        id: critContent
+                        anchors.centerIn: parent
+                        spacing: 3
+                        MaterialSymbol {
+                            Layout.alignment: Qt.AlignVCenter
+                            verticalAlignment: Text.AlignVCenter
+                            text: "warning"
+                            iconSize: 11
+                            color: Appearance.colors.colPrimary
                         }
                         StyledText {
-                            id: timeText
-                            // Layout.fillWidth: true
-                            Layout.rightMargin: 10
-                            horizontalAlignment: Text.AlignLeft
-                            text: NotificationUtils.getFriendlyNotifTimeString(notificationGroup?.time)
-                            font.pixelSize: topRow.fontSize
+                            Layout.alignment: Qt.AlignVCenter
+                            verticalAlignment: Text.AlignVCenter
+                            text: Translation.tr("Critical")
+                            font.pixelSize: 9
+                            font.weight: Font.Bold
+                            color: Appearance.colors.colPrimary
+                        }
+                    }
+                }
+
+                StyledText {
+                    Layout.alignment: Qt.AlignVCenter
+                    verticalAlignment: Text.AlignVCenter
+                    text: "•"
+                    font.pixelSize: Appearance.font.pixelSize.smallest
+                    color: Appearance.colors.colSubtext
+                }
+
+                StyledText {
+                    id: headerTime
+                    Layout.alignment: Qt.AlignVCenter
+                    verticalAlignment: Text.AlignVCenter
+                    text: NotificationUtils.getFriendlyNotifTimeString(notificationGroup?.time)
+                    font.pixelSize: Appearance.font.pixelSize.smallest
+                    color: Appearance.colors.colSubtext
+                }
+
+                // Mini Hover/Toast Status Indicator Pill (embedded in header)
+                Rectangle {
+                    visible: root.popup && !root.expanded
+                    Layout.alignment: Qt.AlignVCenter
+                    radius: 8
+                    implicitHeight: 18
+                    implicitWidth: timerContent.implicitWidth + 10
+                    color: root.containsMouse ? 
+                        ColorUtils.transparentize(Appearance.colors.colSecondary, 0.8) : 
+                        ColorUtils.transparentize(Appearance.colors.colPrimary, 0.85)
+
+                    RowLayout {
+                        id: timerContent
+                        anchors.centerIn: parent
+                        spacing: 3
+
+                        MaterialSymbol {
+                            Layout.alignment: Qt.AlignVCenter
+                            verticalAlignment: Text.AlignVCenter
+                            text: root.containsMouse ? "pause" : "schedule"
+                            iconSize: 10
+                            color: root.containsMouse ? Appearance.colors.colSecondary : Appearance.colors.colPrimary
+                        }
+
+                        StyledText {
+                            Layout.alignment: Qt.AlignVCenter
+                            verticalAlignment: Text.AlignVCenter
+                            text: root.containsMouse ? Translation.tr("Hold") : Translation.tr("Auto")
+                            font.pixelSize: 9
+                            font.weight: Font.DemiBold
+                            color: root.containsMouse ? Appearance.colors.colSecondary : Appearance.colors.colPrimary
+                        }
+                    }
+                }
+
+                Item { 
+                    Layout.fillWidth: true 
+                    Layout.alignment: Qt.AlignVCenter
+                }
+
+                // Expand Chevron Pill (Precision 24px height, dead-centered)
+                Rectangle {
+                    id: expandPill
+                    visible: root.multipleNotifications
+                    Layout.alignment: Qt.AlignVCenter
+                    height: 24
+                    width: expandRow.implicitWidth + 14
+                    radius: 12
+                    color: expandMouse.containsMouse ? 
+                        (expandMouse.pressed ? Appearance.colors.colLayer3Active : Appearance.colors.colLayer3Hover) : 
+                        Appearance.colors.colLayer3
+
+                    Behavior on color {
+                        ColorAnimation { duration: 120 }
+                    }
+
+                    RowLayout {
+                        id: expandRow
+                        anchors.centerIn: parent
+                        spacing: 3
+
+                        StyledText {
+                            Layout.alignment: Qt.AlignVCenter
+                            verticalAlignment: Text.AlignVCenter
+                            text: root.notificationCount
+                            font.pixelSize: 11
+                            font.weight: Font.Bold
+                            color: Appearance.colors.colOnLayer2
+                        }
+
+                        MaterialSymbol {
+                            Layout.alignment: Qt.AlignVCenter
+                            verticalAlignment: Text.AlignVCenter
+                            text: root.expanded ? "keyboard_arrow_up" : "keyboard_arrow_down"
+                            iconSize: 14
                             color: Appearance.colors.colSubtext
                         }
                     }
-                    NotificationGroupExpandButton {
-                        id: expandButton
-                        anchors.right: parent.right
-                        anchors.verticalCenter: parent.verticalCenter
-                        count: root.notificationCount
-                        expanded: root.expanded
-                        fontSize: topRow.fontSize
-                        onClicked: { root.toggleExpanded() }
-                        altAction: () => { root.toggleExpanded() }
 
-                        StyledToolTip {
-                            text: Translation.tr("Tip: right-clicking a group\nalso expands it")
+                    MouseArea {
+                        id: expandMouse
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: {
+                            root.toggleExpanded();
                         }
                     }
                 }
 
-                StyledListView { // Notification body (expanded)
-                    id: notificationsColumn
-                    implicitHeight: contentHeight
-                    Layout.fillWidth: true
-                    spacing: expanded ? 5 : 3
-                    // clip: true
-                    interactive: false
-                    Behavior on spacing {
-                        animation: Appearance.animation.elementMoveFast.numberAnimation.createObject(this)
+                // Header Dismiss / Close Button (Precision 24x24 circular, dead-centered, discards permanently)
+                Rectangle {
+                    id: closeButton
+                    Layout.alignment: Qt.AlignVCenter
+                    width: 24
+                    height: 24
+                    radius: 12
+                    color: closeMouse.containsMouse ? 
+                        (closeMouse.pressed ? Appearance.colors.colLayer3Active : Appearance.colors.colLayer3Hover) : 
+                        Appearance.colors.colLayer3
+
+                    Behavior on color {
+                        ColorAnimation { duration: 120 }
                     }
-                    model: ScriptModel {
-                        values: root.expanded ? root.notifications.slice().reverse() : 
-                            root.notifications.slice().reverse().slice(0, 2)
+
+                    MaterialSymbol {
+                        anchors.centerIn: parent
+                        horizontalAlignment: Text.AlignHCenter
+                        verticalAlignment: Text.AlignVCenter
+                        text: "close"
+                        iconSize: 13
+                        color: Appearance.colors.colSubtext
                     }
-                    delegate: NotificationItem {
-                        required property int index
-                        required property var modelData
-                        notificationObject: modelData
-                        expanded: root.expanded
-                        onlyNotification: (root.notificationCount === 1)
-                        opacity: (!root.expanded && index == 1 && root.notificationCount > 2) ? 0.5 : 1
-                        visible: root.expanded || (index < 2)
-                        anchors.left: parent?.left
-                        anchors.right: parent?.right
+
+                    MouseArea {
+                        id: closeMouse
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: {
+                            root.destroyWithAnimation();
+                        }
+                    }
+                }
+            }
+
+            // 2. Notification Items View (Repeater directly inside ColumnLayout for 100% synchronous height)
+            Repeater {
+                model: ScriptModel {
+                    values: {
+                        if (!root.notifications || root.notifications.length === 0) return [];
+                        if (root.expanded) return root.notifications.slice().reverse();
+                        return [root.notifications[root.notifications.length - 1]];
                     }
                 }
 
+                delegate: NotificationItem {
+                    required property int index
+                    required property var modelData
+                    notificationObject: modelData
+                    expanded: root.expanded
+                    onlyNotification: (root.notificationCount === 1)
+                    Layout.fillWidth: true
+                }
             }
         }
     }

@@ -36,10 +36,10 @@ Scope {
     function screenshot() {
         const saveDir = Config.options.screenSnip.savePath !== "" ? Config.options.screenSnip.savePath : "";
         if (saveDir !== "") {
-            const cmd = `mkdir -p '${saveDir}' && filePath="${saveDir}/screenshot-$(date '+%Y-%m-%d_%H.%M.%S').png" && grim -g "$(slurp)" "$filePath" && cat "$filePath" | wl-copy && notify-send "Screenshot Saved" "Saved to $filePath" -a "Screen Snip" -i "image-x-generic"`;
+            const cmd = `mkdir -p '${saveDir}' && filePath="${saveDir}/screenshot-$(date '+%Y-%m-%d_%H.%M.%S').png" && grim -g "$(slurp)" "$filePath" && cat "$filePath" | wl-copy && notify-send "Screenshot Saved" "Saved to $filePath" -a "Screen Snip" -i "$filePath"`;
             Quickshell.execDetached(["bash", "-c", cmd]);
         } else {
-            const cmd = `grim -g "$(slurp)" - | wl-copy && notify-send "Screenshot Copied" "Copied to clipboard" -a "Screen Snip" -i "image-x-generic"`;
+            const cmd = `mkdir -p '/tmp/quickshell/media/screenshot' && filePath="/tmp/quickshell/media/screenshot/screenshot-$(date '+%Y-%m-%d_%H.%M.%S').png" && grim -g "$(slurp)" "$filePath" && cat "$filePath" | wl-copy && notify-send "Screenshot Copied" "Copied to clipboard" -a "Screen Snip" -i "$filePath"`;
             Quickshell.execDetached(["bash", "-c", cmd]);
         }
     }

@@ -58,7 +58,7 @@ Singleton {
         entry: a
     }))
 
-    function fuzzyQuery(search: string): var { // Idk why list<DesktopEntry> doesn't work
+    function fuzzyQuery(search: string): var {
         if (root.sloppySearch) {
             const results = list.map(obj => ({
                 entry: obj,
@@ -103,8 +103,16 @@ Singleton {
         if (entry) return entry.icon;
 
         // Normal substitutions
-        if (substitutions[str]) return substitutions[str];
-        if (substitutions[str.toLowerCase()]) return substitutions[str.toLowerCase()];
+        if (substitutions[str] && iconExists(substitutions[str])) return substitutions[str];
+        if (substitutions[str.toLowerCase()] && iconExists(substitutions[str.toLowerCase()])) return substitutions[str.toLowerCase()];
+
+        // Steam App specific handling
+        if (/^steam_(?:app|icon)_(\d+)$/i.test(str)) {
+            const appId = str.match(/^steam_(?:app|icon)_(\d+)$/i)[1];
+            if (iconExists("steam_icon_" + appId)) return "steam_icon_" + appId;
+            if (iconExists("steam_app_" + appId)) return "steam_app_" + appId;
+            if (iconExists("steam")) return "steam";
+        }
 
         // Regex substitutions
         for (let i = 0; i < regexSubstitutions.length; i++) {
@@ -113,12 +121,11 @@ Singleton {
                 substitution.regex,
                 substitution.replace,
             );
-            if (replacedName != str) return replacedName;
+            if (replacedName != str && iconExists(replacedName)) return replacedName;
         }
 
         // Icon exists -> return as is
         if (iconExists(str)) return str;
-
 
         // Simple guesses
         const lowercased = str.toLowerCase();
@@ -158,7 +165,7 @@ Singleton {
         const heuristicEntry = DesktopEntries.heuristicLookup(str);
         if (heuristicEntry) return heuristicEntry.icon;
 
-        // Give up
+        // Give up - default fallback
         return "application-x-executable";
     }
 }

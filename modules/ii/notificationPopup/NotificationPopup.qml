@@ -30,6 +30,7 @@ Scope {
 
         WlrLayershell.namespace: "quickshell:notificationPopup"
         WlrLayershell.layer: WlrLayer.Overlay
+        WlrLayershell.keyboardFocus: WlrKeyboardFocus.OnDemand
         exclusiveZone: 0
 
         anchors {

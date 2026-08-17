@@ -55,7 +55,9 @@ Singleton {
     property string userPresetsPath: FileUtils.trimFileProtocol(`${Directories.shellConfig}/presets`)
     property string presetsScriptPath: FileUtils.trimFileProtocol(`${Directories.scriptPath}/presets.sh`)
     property string generatedLockMaterialThemePath: FileUtils.trimFileProtocol(`${Directories.state}/user/generated/colors-lock.json`)
-    // Cleanup on init
+    property string syncSteamIconsScriptPath: FileUtils.trimFileProtocol(`${Directories.scriptPath}/icons/sync-steam-icons.py`)
+
+    // Cleanup and background init
     Component.onCompleted: {
         Quickshell.execDetached(["mkdir", "-p", `${userPresetsPath}`])
         Quickshell.execDetached(["mkdir", "-p", `${shellConfig}`])
@@ -67,5 +69,6 @@ Singleton {
         Quickshell.execDetached(["mkdir", "-p", `${aiChats}`])
         Quickshell.execDetached(["mkdir", "-p", `${userActions}`])
         Quickshell.execDetached(["rm", "-rf", `${tempImages}`])
+        Quickshell.execDetached(["python3", `${syncSteamIconsScriptPath}`])
     }
 }

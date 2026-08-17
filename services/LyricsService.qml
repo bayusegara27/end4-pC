@@ -40,7 +40,7 @@ Singleton {
         repeat: true
         running: root.status === "ok" && root.lyricsLines.length > 0
         onTriggered: {
-            const pos = (root.activePlayer?.position ?? 0) + 1.5
+            const pos = root.activePlayer?.position ?? 0
             let idx = -1
             for (let i = 0; i < root.lyricsLines.length; i++) {
                 if (root.lyricsLines[i].time <= pos) idx = i
