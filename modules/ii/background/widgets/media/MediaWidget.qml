@@ -207,6 +207,7 @@ AbstractBackgroundWidget {
                         bottomMargin: 10
                     }
                     spacing: 4
+                    visible: MprisController.activePlayer !== null
 
                     RippleButton {
                         implicitWidth: 26
@@ -222,7 +223,7 @@ AbstractBackgroundWidget {
                             text: "skip_previous"
                             iconSize: 16
                             fill: 1
-                            color: "white"
+                            color: Appearance.colors.colPrimary
                         }
                     }
 
@@ -255,7 +256,7 @@ AbstractBackgroundWidget {
                             text: "skip_next"
                             iconSize: 16
                             fill: 1
-                            color: "white"
+                            color: Appearance.colors.colPrimary
                         }
                     }
                 }
