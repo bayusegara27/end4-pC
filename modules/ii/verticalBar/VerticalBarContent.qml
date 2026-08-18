@@ -155,8 +155,7 @@ Item {
                                 source: root.getWidgetUrl(modelData)
                                 onLoaded: {
                                     if (item && "vertical" in item) item.vertical = true
-                                    if (item && item.hasOwnProperty("mirrored"))
-                                        item.mirrored = root.getMirroredForIndex(root.effectiveLeftLayout, index)
+                                    if (item && item.hasOwnProperty("mirrored")) { try { item.mirrored = root.getMirroredForIndex(root.effectiveLeftLayout, index); } catch (e) {} }
                                 }
                             }
                         }
@@ -182,8 +181,7 @@ Item {
                             source: root.getWidgetUrl(modelData)
                             onLoaded: {
                                 if (item && "vertical" in item) item.vertical = true
-                                if (item && item.hasOwnProperty("mirrored"))
-                                    item.mirrored = root.getMirroredForIndex(root.effectiveLeftLayout, index)
+                                if (item && item.hasOwnProperty("mirrored")) { try { item.mirrored = root.getMirroredForIndex(root.effectiveLeftLayout, index); } catch (e) {} }
                             }
                         }
                     }
@@ -231,8 +229,7 @@ Item {
                                 source: root.getWidgetUrl(modelData)
                                 onLoaded: {
                                     if (item && "vertical" in item) item.vertical = true
-                                    if (item && item.hasOwnProperty("mirrored"))
-                                        item.mirrored = root.getMirroredForIndex(root.effectiveMiddleLayout, index)
+                                    if (item && item.hasOwnProperty("mirrored")) { try { item.mirrored = root.getMirroredForIndex(root.effectiveMiddleLayout, index); } catch (e) {} }
                                 }
                             }
                         }
@@ -258,8 +255,7 @@ Item {
                             source: root.getWidgetUrl(modelData)
                             onLoaded: {
                                 if (item && "vertical" in item) item.vertical = true
-                                if (item && item.hasOwnProperty("mirrored"))
-                                    item.mirrored = root.getMirroredForIndex(root.effectiveMiddleLayout, index)
+                                if (item && item.hasOwnProperty("mirrored")) { try { item.mirrored = root.getMirroredForIndex(root.effectiveMiddleLayout, index); } catch (e) {} }
                             }
                         }
                     }
@@ -308,8 +304,7 @@ Item {
                                 source: root.getWidgetUrl(modelData)
                                 onLoaded: {
                                     if (item && "vertical" in item) item.vertical = true
-                                    if (item && item.hasOwnProperty("mirrored"))
-                                        item.mirrored = root.getMirroredForIndex(root.effectiveRightLayout, index)
+                                    if (item && item.hasOwnProperty("mirrored")) { try { item.mirrored = root.getMirroredForIndex(root.effectiveRightLayout, index); } catch (e) {} }
                                 }
                             }
                         }
@@ -335,8 +330,7 @@ Item {
                             source: root.getWidgetUrl(modelData)
                             onLoaded: {
                                 if (item && "vertical" in item) item.vertical = true
-                                if (item && item.hasOwnProperty("mirrored"))
-                                    item.mirrored = root.getMirroredForIndex(root.effectiveRightLayout, index)
+                                if (item && item.hasOwnProperty("mirrored")) { try { item.mirrored = root.getMirroredForIndex(root.effectiveRightLayout, index); } catch (e) {} }
                             }
                         }
                     }

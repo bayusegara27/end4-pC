@@ -301,6 +301,105 @@ ContentPage {
         }
 
         ContentSection {
+            icon: "notifications_paused"
+            shape: MaterialShape.Shape.Pill
+            title: Translation.tr("Do Not Disturb & Notifications")
+
+            GroupedList {
+                ConfigSwitch {
+                    buttonIcon: "notifications_off"
+                    text: Translation.tr("Do Not Disturb (Master Switch)")
+                    checked: Config.options.notifications.dnd.enabled
+                    onCheckedChanged: {
+                        if (checked) {
+                            Notifications.enableDnd(0);
+                        } else {
+                            Notifications.disableDnd();
+                        }
+                    }
+                }
+
+                ConfigSwitch {
+                    buttonIcon: "sports_esports"
+                    text: Translation.tr("Auto-DND on Fullscreen / Gaming")
+                    checked: Config.options.notifications.dnd.autoFullscreen
+                    onCheckedChanged: {
+                        Config.options.notifications.dnd.autoFullscreen = checked;
+                    }
+                }
+
+                ConfigSwitch {
+                    buttonIcon: "crisis_alert"
+                    text: Translation.tr("Allow critical / emergency alerts (e.g. low battery)")
+                    checked: Config.options.notifications.dnd.allowCritical
+                    onCheckedChanged: {
+                        Config.options.notifications.dnd.allowCritical = checked;
+                    }
+                }
+
+                ConfigSwitch {
+                    buttonIcon: "volume_off"
+                    text: Translation.tr("Mute notification sounds during DND")
+                    checked: Config.options.notifications.dnd.muteSound
+                    onCheckedChanged: {
+                        Config.options.notifications.dnd.muteSound = checked;
+                    }
+                }
+
+                ConfigSpinBox {
+                    icon: "timer"
+                    text: Translation.tr("Default timer duration (minutes)")
+                    value: Config.options.notifications.dnd.timerDuration
+                    from: 5
+                    to: 480
+                    stepSize: 15
+                    onValueChanged: {
+                        Config.options.notifications.dnd.timerDuration = value;
+                    }
+                }
+            }
+
+            ContentSubsection {
+                title: Translation.tr("Scheduled Quiet Hours")
+
+                GroupedList {
+                    ConfigSwitch {
+                        buttonIcon: "bedtime"
+                        text: Translation.tr("Enable scheduled quiet hours")
+                        checked: Config.options.notifications.dnd.schedule.enable
+                        onCheckedChanged: {
+                            Config.options.notifications.dnd.schedule.enable = checked;
+                        }
+                    }
+
+                    ConfigRow {
+                        uniform: true
+                        ConfigTextArea {
+                            Layout.fillWidth: true
+                            buttonIcon: "alarm_on"
+                            fieldWidth: 100
+                            text: Translation.tr("Quiet hours start (HH:mm)")
+                            value: Config.options.notifications.dnd.schedule.from
+                            onValueChanged: {
+                                Config.options.notifications.dnd.schedule.from = value;
+                            }
+                        }
+                        ConfigTextArea {
+                            Layout.fillWidth: true
+                            buttonIcon: "alarm_off"
+                            fieldWidth: 100
+                            text: Translation.tr("Quiet hours end (HH:mm)")
+                            value: Config.options.notifications.dnd.schedule.to
+                            onValueChanged: {
+                                Config.options.notifications.dnd.schedule.to = value;
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        ContentSection {
             icon: "deployed_code_update"
             title: Translation.tr("System updates (Arch only)")
 

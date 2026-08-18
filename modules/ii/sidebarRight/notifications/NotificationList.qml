@@ -12,7 +12,8 @@ Item {
     id: root
 
     property string searchText: ""
-    property string activeFilter: "all" // "all", "critical", "downloads"
+    property string activeFilter: "all"
+    property bool showDndMenu: false // "all", "critical", "downloads"
 
     // Helper functions for search & filter
     function matchesFilter(notif) {
@@ -281,6 +282,83 @@ Item {
             }
         }
 
+        // DND Timer Selector Row (Expandable)
+        RowLayout {
+            id: dndTimerRow
+            Layout.fillWidth: true
+            visible: root.showDndMenu
+            spacing: 6
+
+            RippleButton {
+                Layout.fillWidth: true
+                Layout.preferredHeight: 30
+                buttonRadius: Appearance.rounding.small
+                colBackground: Notifications.dndMode === "manual" && Notifications.isDndActive ? Appearance.colors.colPrimaryContainer : Appearance.colors.colLayer2
+                colBackgroundHover: Appearance.colors.colPrimaryContainerHover
+                buttonText: Translation.tr("Always")
+                downAction: () => {
+                    Notifications.enableDnd(0);
+                    root.showDndMenu = false;
+                }
+            }
+
+            RippleButton {
+                Layout.fillWidth: true
+                Layout.preferredHeight: 30
+                buttonRadius: Appearance.rounding.small
+                colBackground: Notifications.dndMode === "timed" && Notifications.dndRemainingMinutes <= 30 && Notifications.isDndActive ? Appearance.colors.colPrimaryContainer : Appearance.colors.colLayer2
+                colBackgroundHover: Appearance.colors.colPrimaryContainerHover
+                buttonText: Translation.tr("30m")
+                downAction: () => {
+                    Notifications.enableDnd(30);
+                    root.showDndMenu = false;
+                }
+            }
+
+            RippleButton {
+                Layout.fillWidth: true
+                Layout.preferredHeight: 30
+                buttonRadius: Appearance.rounding.small
+                colBackground: Notifications.dndMode === "timed" && Notifications.dndRemainingMinutes > 30 && Notifications.dndRemainingMinutes <= 60 && Notifications.isDndActive ? Appearance.colors.colPrimaryContainer : Appearance.colors.colLayer2
+                colBackgroundHover: Appearance.colors.colPrimaryContainerHover
+                buttonText: Translation.tr("1h")
+                downAction: () => {
+                    Notifications.enableDnd(60);
+                    root.showDndMenu = false;
+                }
+            }
+
+            RippleButton {
+                Layout.fillWidth: true
+                Layout.preferredHeight: 30
+                buttonRadius: Appearance.rounding.small
+                colBackground: Notifications.dndMode === "timed" && Notifications.dndRemainingMinutes > 60 && Notifications.isDndActive ? Appearance.colors.colPrimaryContainer : Appearance.colors.colLayer2
+                colBackgroundHover: Appearance.colors.colPrimaryContainerHover
+                buttonText: Translation.tr("2h")
+                downAction: () => {
+                    Notifications.enableDnd(120);
+                    root.showDndMenu = false;
+                }
+            }
+
+            RippleButton {
+                Layout.preferredWidth: 30
+                Layout.preferredHeight: 30
+                buttonRadius: Appearance.rounding.small
+                colBackground: Appearance.colors.colLayer2
+                colBackgroundHover: Appearance.colors.colLayer2Hover
+                downAction: () => {
+                    root.showDndMenu = false;
+                }
+                MaterialSymbol {
+                    anchors.centerIn: parent
+                    text: "close"
+                    iconSize: 16
+                    color: Appearance.colors.colOnLayer2
+                }
+            }
+        }
+
         // Bottom Action Bar
         ButtonGroup {
             id: statusRow
@@ -288,20 +366,59 @@ Item {
 
             NotificationStatusButton {
                 Layout.fillWidth: false
-                buttonIcon: Notifications.silent ? "notifications_off" : "notifications_paused"
-                toggled: Notifications.silent
+                buttonIcon: Notifications.isDndActive ? "notifications_off" : "notifications"
+                toggled: Notifications.isDndActive
                 onClicked: () => {
-                    Notifications.silent = !Notifications.silent;
+                    if (Notifications.isDndActive) {
+                        Notifications.disableDnd();
+                        root.showDndMenu = false;
+                    } else {
+                        Notifications.enableDnd(0);
+                    }
                 }
+                
+                MouseArea {
+                    anchors.fill: parent
+                    acceptedButtons: Qt.RightButton
+                    onClicked: (mouse) => {
+                        if (mouse.button === Qt.RightButton) {
+                            root.showDndMenu = !root.showDndMenu;
+                        }
+                    }
+                }
+
                 StyledToolTip {
-                    text: Notifications.silent ? Translation.tr("Do Not Disturb: ON") : Translation.tr("Do Not Disturb: OFF")
+                    text: {
+                        if (!Notifications.isDndActive) return Translation.tr("Do Not Disturb: OFF (Left-click: toggle, Right-click: timer presets)");
+                        if (Notifications.dndMode === "timed" && Notifications.dndRemainingMinutes > 0) {
+                            return Translation.tr("Do Not Disturb: ON (%1m remaining)").arg(Notifications.dndRemainingMinutes);
+                        }
+                        if (Notifications.isFullscreenActive) {
+                            return Translation.tr("Do Not Disturb: ON (Auto - Fullscreen App/Game)");
+                        }
+                        if (Notifications.isScheduleActive) {
+                            return Translation.tr("Do Not Disturb: ON (Scheduled Quiet Hours)");
+                        }
+                        return Translation.tr("Do Not Disturb: ON (Persistent/Always - Right-click for timers)");
+                    }
                 }
             }
 
             NotificationStatusButton {
-                enabled: false
+                enabled: true
                 Layout.fillWidth: true
-                buttonText: Translation.tr("%1 notifications").arg(Notifications.list.length)
+                buttonText: {
+                    if (Notifications.isDndActive && Notifications.dndMode === "timed" && Notifications.dndRemainingMinutes > 0) {
+                        return Translation.tr("DND: %1m | %2 notifs").arg(Notifications.dndRemainingMinutes).arg(Notifications.list.length);
+                    }
+                    return Translation.tr("%1 notifications").arg(Notifications.list.length);
+                }
+                onClicked: () => {
+                    root.showDndMenu = !root.showDndMenu;
+                }
+                StyledToolTip {
+                    text: Translation.tr("Click to toggle DND duration presets")
+                }
             }
 
             NotificationStatusButton {

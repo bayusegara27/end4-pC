@@ -2,6 +2,7 @@ pragma Singleton
 pragma ComponentBehavior: Bound
 
 import qs.modules.common
+import qs.services
 import qs
 import QtQuick
 import Quickshell
@@ -101,12 +102,98 @@ Singleton {
         }
     }
 
-    property bool silent: false
+    // --- Do Not Disturb (DND) State & Intelligence ---
+    property bool dndConfigEnabled: Config.options?.notifications?.dnd?.enabled ?? false
+    property string dndMode: Config.options?.notifications?.dnd?.mode ?? "manual"
+    property double dndTimerEndTime: Config.options?.notifications?.dnd?.timerEndTime ?? 0
+    property bool dndAutoFullscreen: Config.options?.notifications?.dnd?.autoFullscreen ?? false
+    property bool dndScheduleEnabled: Config.options?.notifications?.dnd?.schedule?.enable ?? false
+    property string dndScheduleFrom: Config.options?.notifications?.dnd?.schedule?.from ?? "23:00"
+    property string dndScheduleTo: Config.options?.notifications?.dnd?.schedule?.to ?? "07:00"
+    property bool dndAllowCritical: Config.options?.notifications?.dnd?.allowCritical ?? true
+
+    // Fullscreen game/app detection across all active monitors
+    property bool isFullscreenActive: {
+        if (!dndAutoFullscreen) return false;
+        try {
+            if (typeof WM !== "undefined" && typeof WM.fullscreenOnMonitor === "function" && WM.monitors) {
+                return WM.monitors.some(m => WM.fullscreenOnMonitor(m.name));
+            }
+        } catch (e) {}
+        return false;
+    }
+
+    // Scheduled Quiet Hours detection
+    property bool isScheduleActive: {
+        if (!dndScheduleEnabled) return false;
+        try {
+            const now = new Date();
+            const currentMinutes = now.getHours() * 60 + now.getMinutes();
+            const fromParts = dndScheduleFrom.split(":").map(Number);
+            const toParts = dndScheduleTo.split(":").map(Number);
+            const fromMinutes = fromParts[0] * 60 + fromParts[1];
+            const toMinutes = toParts[0] * 60 + toParts[1];
+            if (fromMinutes <= toMinutes) {
+                return currentMinutes >= fromMinutes && currentMinutes < toMinutes;
+            } else {
+                return currentMinutes >= fromMinutes || currentMinutes < toMinutes;
+            }
+        } catch (e) {
+            return false;
+        }
+    }
+
+    // Timed DND active status
+    property bool isTimedActive: {
+        if (dndMode === "timed" && dndTimerEndTime > 0) {
+            return Date.now() < dndTimerEndTime;
+        }
+        return false;
+    }
+
+    // Remaining minutes for display
+    property int dndRemainingMinutes: {
+        if (dndMode === "timed" && dndTimerEndTime > 0) {
+            const diff = dndTimerEndTime - Date.now();
+            return diff > 0 ? Math.ceil(diff / 60000) : 0;
+        }
+        return 0;
+    }
+
+    // Overall active DND evaluation
+    property bool isDndActive: {
+        if (dndMode === "manual" && dndConfigEnabled) return true;
+        if (dndMode === "timed" && isTimedActive) return true;
+        if (isFullscreenActive) return true;
+        if (isScheduleActive) return true;
+        return dndConfigEnabled;
+    }
+
+    // Legacy alias for compatibility
+    property bool silent: isDndActive
+
+    // DND Monitor Timer (checks expiry and schedules every 5s)
+    Timer {
+        id: dndMonitorTimer
+        interval: 5000
+        running: true
+        repeat: true
+        triggeredOnStart: true
+        onTriggered: {
+            if (root.dndMode === "timed" && root.dndTimerEndTime > 0) {
+                if (Date.now() >= root.dndTimerEndTime) {
+                    console.log("[Notifications] Timed DND ended. Returning to normal mode.");
+                    root.disableDnd();
+                }
+            }
+        }
+    }
+
     property int unread: 0
     property var filePath: Directories.notificationsPath
     property list<Notif> list: []
     property var popupList: list.filter((notif) => notif.popup);
-    property bool popupInhibited: (GlobalStates?.sidebarRightOpen ?? false) || silent
+    property bool popupInhibited: (GlobalStates?.sidebarRightOpen ?? false) || isDndActive
     property var latestTimeForApp: ({})
     Component {
         id: notifComponent
@@ -206,8 +293,11 @@ Singleton {
             });
 			root.list = [...root.list, newNotifObject];
 
-            // Popup
-            if (!root.popupInhibited) {
+            // Popup handling with DND & Critical Alert bypass
+            const isCritical = notification.urgency === "critical" || (notification.hints && (notification.hints["urgency"] === 2 || notification.hints.urgency === 2));
+            const shouldInhibit = (GlobalStates?.sidebarRightOpen ?? false) || (root.isDndActive && !(root.dndAllowCritical && isCritical));
+
+            if (!shouldInhibit) {
                 newNotifObject.popup = true;
                 if (notification.expireTimeout !== 0) {
                     newNotifObject.timer = notifTimerComponent.createObject(root, {
@@ -219,6 +309,33 @@ Singleton {
             }
             root.notify(newNotifObject);
             notifFileView.setText(stringifyList(root.list));
+        }
+    }
+
+    function enableDnd(durationMinutes) {
+        durationMinutes = durationMinutes || 0;
+        if (durationMinutes > 0) {
+            Config.options.notifications.dnd.mode = "timed";
+            Config.options.notifications.dnd.timerDuration = durationMinutes;
+            Config.options.notifications.dnd.timerEndTime = Date.now() + (durationMinutes * 60 * 1000);
+        } else {
+            Config.options.notifications.dnd.mode = "manual";
+            Config.options.notifications.dnd.timerEndTime = 0;
+        }
+        Config.options.notifications.dnd.enabled = true;
+    }
+
+    function disableDnd() {
+        Config.options.notifications.dnd.enabled = false;
+        Config.options.notifications.dnd.timerEndTime = 0;
+        Config.options.notifications.dnd.mode = "manual";
+    }
+
+    function toggleDnd(durationMinutes) {
+        if (root.isDndActive) {
+            disableDnd();
+        } else {
+            enableDnd(durationMinutes || 0);
         }
     }
 

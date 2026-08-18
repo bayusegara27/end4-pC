@@ -583,6 +583,21 @@ Singleton {
             property JsonObject notifications: JsonObject {
                 property int timeout: 7000
                 property string position: "top_right"
+                property JsonObject dnd: JsonObject {
+                    property bool enabled: false
+                    property bool persistent: true
+                    property string mode: "manual" // "manual", "timed", "fullscreen", "scheduled"
+                    property int timerDuration: 60 // minutes
+                    property double timerEndTime: 0 // timestamp in ms when timer mode expires
+                    property bool autoFullscreen: false
+                    property bool allowCritical: true
+                    property bool muteSound: true
+                    property JsonObject schedule: JsonObject {
+                        property bool enable: false
+                        property string from: "23:00"
+                        property string to: "07:00"
+                    }
+                }
             }
 
             property JsonObject osd: JsonObject {
