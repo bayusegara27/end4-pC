@@ -166,9 +166,9 @@ Singleton {
     })
     // Image board tags are exact identifiers, not free text: "genshin" matches
     // nothing at all, while "genshin_impact" has thousands of posts. Typed
-    // queries are therefore resolved to a real tag first, via the board's own
-    // tag search, taking the most-used match. Cached per provider so paging
-    // does not repeat the lookup.
+    // queries go through booru-resolve-tags.sh, which turns a phrase into the
+    // tags to actually search — see the reasoning there. Cached per provider so
+    // paging does not repeat the lookup.
     property var resolvedTags: ({})
 
     function _normalizeQuery(text) {
@@ -195,8 +195,7 @@ Singleton {
         tagResolveProc.provider = provider;
         tagResolveProc.cacheKey = cacheKey;
         tagResolveProc.fallback = normalized;
-        tagResolveProc.command = ["curl", "-s", "-A", "quickshell-wallpaper/1.0",
-            `${host}/tag.json?name=${encodeURIComponent("*" + normalized + "*")}&order=count&limit=1`];
+        tagResolveProc.command = ["bash", Directories.booruResolveTagsScriptPath, host, root.query];
         tagResolveProc.running = true;
     }
 
@@ -230,17 +229,12 @@ Singleton {
         stdout: SplitParser { onRead: data => tagResolveProc.buffer += data }
 
         onExited: (exitCode) => {
-            let tag = tagResolveProc.fallback;
-            if (exitCode === 0) {
-                try {
-                    const matches = JSON.parse(tagResolveProc.buffer);
-                    // No match at all: keep the typed text so the search simply
-                    // comes back empty rather than silently showing everything.
-                    if (matches.length > 0 && matches[0].name) tag = matches[0].name;
-                } catch (e) {
-                    // fall through to the typed text
-                }
-            }
+            // The script prints the tags to search, already resolved and
+            // ANDed. Empty output means it found nothing worth searching.
+            const resolved = tagResolveProc.buffer.trim();
+            const tag = (exitCode === 0 && resolved.length > 0)
+                ? resolved
+                : tagResolveProc.fallback;
             const cache = root.resolvedTags;
             cache[tagResolveProc.cacheKey] = tag;
             root.resolvedTags = cache;

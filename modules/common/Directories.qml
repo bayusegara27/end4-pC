@@ -45,6 +45,7 @@ Singleton {
     property string wallpaperSwitchScriptPath: FileUtils.trimFileProtocol(`${Directories.scriptPath}/colors/switchwall.sh`)
     property string liveWallpaperColorSyncScriptPath: FileUtils.trimFileProtocol(`${Directories.scriptPath}/colors/wpe-colorsync.sh`)
     property string wallpaperProviderScriptPath: FileUtils.trimFileProtocol(`${Directories.scriptPath}/colors/wallpaper-provider.sh`)
+    property string booruResolveTagsScriptPath: FileUtils.trimFileProtocol(`${Directories.scriptPath}/colors/booru-resolve-tags.sh`)
     property string wpeLibraryScriptPath: FileUtils.trimFileProtocol(`${Directories.scriptPath}/colors/wpe-library.sh`)
     property string wpeSetWallpaperScriptPath: FileUtils.trimFileProtocol(`${Directories.scriptPath}/colors/wpe-set-wallpaper.sh`)
     property string wpeEnginePath: FileUtils.trimFileProtocol(`${Directories.config}/wpe-manager/engine.json`)
