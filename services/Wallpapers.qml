@@ -174,13 +174,19 @@ Singleton {
     }
 
     // Thumbnail generation
-    function generateThumbnail(size: string) {
+    // `directory` defaults to the folder currently being browsed. Passing it
+    // explicitly avoids a race: setDirectory() validates asynchronously, so
+    // root.directory may still hold the previous folder when this is called
+    // right after it.
+    function generateThumbnail(size: string, directory) {
         if (!["normal", "large", "x-large", "xx-large"].includes(size)) throw new Error("Invalid thumbnail size");
-        thumbgenProc.directory = root.directory
+        thumbgenProc.directory = directory ?? root.directory
         thumbgenProc.running = false
         thumbgenProc.command = [
             "bash", "-c",
-            `${thumbgenScriptPath} --size ${size} --machine_progress -d ${FileUtils.trimFileProtocol(root.directory)} || ${generateThumbnailsMagickScriptPath} --size ${size} -d ${FileUtils.trimFileProtocol(root.directory)}`,
+            // Quoted: folder names can contain spaces. The magick script is the
+            // fallback for when thumbgen.py's GnomeDesktop bindings are absent.
+            `${thumbgenScriptPath} --size ${size} --machine_progress -d '${FileUtils.trimFileProtocol(thumbgenProc.directory)}' || ${generateThumbnailsMagickScriptPath} --size ${size} -d '${FileUtils.trimFileProtocol(thumbgenProc.directory)}'`,
         ]
         // console.log("[Wallpapers] Updating thumbnails with command ", thumbgenProc.command.join(" "))
         root.thumbnailGenerationProgress = 0

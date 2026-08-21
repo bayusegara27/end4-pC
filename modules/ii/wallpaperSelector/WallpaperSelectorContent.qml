@@ -36,14 +36,21 @@ MouseArea {
         }
     ]
 
-    function updateThumbnails() {
+    // The grid asks for thumbnails at a size derived from its cell size, so the
+    // needed size changes with the window and the column count. `switchToDownloads`
+    // is for the online grid, which drops its downloads in the Wallpapers folder.
+    function updateThumbnails(switchToDownloads = false) {
         const item = gridLoader.item;
         const totalImageMargin = (Appearance.sizes.wallpaperSelectorItemMargins + Appearance.sizes.wallpaperSelectorItemPadding) * 2;
         const cellW = item?.cellWidth ?? (wallpaperGridBackground.width / root.columns);
         const cellH = item?.cellHeight ?? (cellW / root.previewCellAspectRatio);
+        if (!(cellW > 0 && cellH > 0)) return;
         const thumbnailSizeName = Images.thumbnailSizeNameForDimensions(cellW - totalImageMargin, cellH - totalImageMargin);
-        Wallpapers.setDirectory(`${Directories.pictures}/Wallpapers`);
-        Qt.callLater(() => Wallpapers.generateThumbnail(thumbnailSizeName));
+        const targetDirectory = switchToDownloads
+            ? `${Directories.pictures}/Wallpapers`
+            : Wallpapers.effectiveDirectory;
+        if (switchToDownloads) Wallpapers.setDirectory(targetDirectory);
+        Qt.callLater(() => Wallpapers.generateThumbnail(thumbnailSizeName, targetDirectory));
     }
 
     function handleFilePasting(event) {
@@ -394,6 +401,7 @@ MouseArea {
                             columns: root.columns
                             previewCellAspectRatio: root.previewCellAspectRatio
                             onWallpaperSelected: path => root.selectWallpaperPath(path)
+                            onUpdateThumbnailsRequested: root.updateThumbnails()
                         }
                     }
 
@@ -403,7 +411,7 @@ MouseArea {
                             provider: root.source
                             resolution: root.selectedResolution
                             onWallpaperSelected: path => root.selectWallpaperPath(path)
-                            onUpdateThumbnailsRequested: root.updateThumbnails()
+                            onUpdateThumbnailsRequested: root.updateThumbnails(true)
                         }
                     }
 

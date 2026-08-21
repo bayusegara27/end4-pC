@@ -171,6 +171,7 @@ switch() {
     color="$5"
     colors_only_flag="$6"
     colors_lock_flag="$7"
+    live_source_flag="$8"
 
     aiStylingEnabled=$(jq -r '.background.widgets.clock.cookie.aiStyling' "$SHELL_CONFIG_FILE")
     if [[ "$aiStylingEnabled" == "true" && -z "$colors_only_flag" ]]; then
@@ -195,7 +196,11 @@ switch() {
             exit 0
         fi
 
-        check_and_prompt_upscale "$imgpath" &
+        # A live wallpaper's preview is only ever a color source, never shown as
+        # the wallpaper itself, so its resolution is irrelevant here.
+        if [[ -z "$live_source_flag" ]]; then
+            check_and_prompt_upscale "$imgpath" &
+        fi
 
         if [[ -z "$colors_only_flag" ]]; then
             kill_existing_mpvpaper
@@ -376,6 +381,7 @@ main() {
     colors_lock_flag=""
     explicit_image=""
     start_dir_flag=""
+    live_source_flag=""
 
     get_type_from_config() {
         jq -r '.appearance.palette.type' "$SHELL_CONFIG_FILE" 2>/dev/null || echo "auto"
@@ -453,6 +459,21 @@ main() {
 
     if [[ -n "$noswitch_flag" && -n "$explicit_image" ]]; then
         colors_only_flag="1"
+    fi
+
+    # When linux-wallpaperengine is driving the background, the wallpaper path
+    # stored in the config no longer describes what is on screen, so colorgen
+    # has to read the live wallpaper's preview instead. This only applies to
+    # colorgen-only runs that would otherwise fall back to the stored path —
+    # an explicit --image and the separate lock palette are left alone. The
+    # wallpaper itself is never touched, hence colors_only.
+    if [[ -n "$noswitch_flag" && -z "$colors_lock_flag" && -z "$explicit_image" ]]; then
+        live_wallpaper_still="$("$SCRIPT_DIR/wpe-source.sh" 2>/dev/null)"
+        if [[ -n "$live_wallpaper_still" && -f "$live_wallpaper_still" ]]; then
+            imgpath="$live_wallpaper_still"
+            colors_only_flag="1"
+            live_source_flag="1"
+        fi
     fi
 
     config_color="$(get_accent_color_from_config)"
@@ -535,7 +556,7 @@ main() {
         fi
     fi
 
-    switch "$imgpath" "$mode_flag" "$type_flag" "$color_flag" "$color" "$colors_only_flag" "$colors_lock_flag"
+    switch "$imgpath" "$mode_flag" "$type_flag" "$color_flag" "$color" "$colors_only_flag" "$colors_lock_flag" "$live_source_flag"
 }
 
 main "$@"

@@ -361,7 +361,11 @@ Singleton {
                         property string sizeMode: "1x3" 
                     }
                 }
-                property list<string> screenList: [] 
+                property list<string> screenList: []
+                // Who owns the desktop background: "shell" (quickshell draws it
+                // itself) or "wallpaperengine" (linux-wallpaperengine, managed
+                // by wpe-manager). Keeps the two from stacking.
+                property string provider: "shell"
                 property string wallpaperPath: ""
                 property bool centeredWallpaper: false
                 property string centeredWallpaperShape: "Cookie7Sided"

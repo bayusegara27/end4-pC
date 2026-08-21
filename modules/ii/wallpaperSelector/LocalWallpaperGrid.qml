@@ -15,8 +15,29 @@ Item {
     id: root
 
     signal wallpaperSelected(string path)
+    signal updateThumbnailsRequested()
     property real cellWidth: grid.cellWidth
     property real cellHeight: grid.cellHeight
+
+    // Thumbnails are looked up by a size derived from the cell size, so both a
+    // new folder and a resize can leave the grid pointing at a size that was
+    // never generated — which is why items showed up blank. Nothing else asks
+    // for local thumbnails, so this is the only automatic trigger.
+    Timer {
+        id: thumbnailRequestTimer
+        interval: 300
+        repeat: false
+        onTriggered: root.updateThumbnailsRequested()
+    }
+
+    onCellWidthChanged: thumbnailRequestTimer.restart()
+    onCellHeightChanged: thumbnailRequestTimer.restart()
+    Component.onCompleted: thumbnailRequestTimer.restart()
+
+    Connections {
+        target: Wallpapers.folderModel
+        function onCountChanged() { thumbnailRequestTimer.restart() }
+    }
 
     function moveSelection(delta) { grid.moveSelection(delta) }
     function activateCurrent() { grid.activateCurrent() }

@@ -5,6 +5,7 @@ import qs.services
 import qs.modules.common
 import qs.modules.common.widgets
 import qs.modules.common.functions
+import Quickshell
 import Quickshell.Hyprland
 
 
@@ -226,8 +227,32 @@ ContentPage {
                     }
                 }
 
+                ConfigComboBox {
+                    Layout.fillWidth: true
+                    buttonIcon: "wallpaper"
+                    text: Translation.tr("Wallpaper provider")
+                    fieldWidth: 180
+                    description: Config.options.background.provider === "wallpaperengine"
+                        ? Translation.tr("wpe-manager draws the background and colors follow the live wallpaper. The shell's own wallpaper stays hidden behind it.")
+                        : Translation.tr("The shell draws the background itself. Wallpaper Engine is kept stopped.")
+                    model: [
+                        { displayName: Translation.tr("Shell (built-in)"), icon: "image", value: "shell" },
+                        { displayName: Translation.tr("Wallpaper Engine"), icon: "animation", value: "wallpaperengine" },
+                    ]
+                    currentValue: Config.options.background.provider
+                    onSelected: newValue => {
+                        if (newValue === Config.options.background.provider) return;
+                        // The script writes the setting itself, then starts or
+                        // stops the backend so the two providers never overlap.
+                        Quickshell.execDetached([
+                            "bash", Directories.wallpaperProviderScriptPath, "set", newValue
+                        ]);
+                    }
+                }
+
                 ConfigSpinBox {
                     icon: "timer"
+                    enabled: Config.options.background.provider !== "wallpaperengine"
                     text: Translation.tr("Wallpaper change interval (min)")
                     value: Config.options.wallpaperSelector.changeInterval / 60000
                     from: 0

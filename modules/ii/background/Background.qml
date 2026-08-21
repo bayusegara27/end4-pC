@@ -221,7 +221,10 @@ Variants {
         Timer {
             id: wallpaperChangeTimer
             interval: Config.options.wallpaperSelector.changeInterval
+            // linux-wallpaperengine has its own playlist rotation; running both
+            // would fight over the background.
             running: Config.options.wallpaperSelector.changeInterval > 0
+                && Config.options.background.provider !== "wallpaperengine"
             repeat: true
             onTriggered: {
                 if (Wallpapers.folderModel.count > 0) {
