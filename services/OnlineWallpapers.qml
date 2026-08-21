@@ -234,6 +234,13 @@ Singleton {
         }
     }
 
+    // Openverse proxies its own thumbnails, and that proxy is broken for
+    // Wikimedia-hosted images: 9 of every 10 results came back 424 "Thumbnail
+    // unavailable from provider", leaving a grid of blanks. Restricting the
+    // search to sources whose thumbnails actually resolve fixes it, and both of
+    // these are CC0 stock photography — better wallpaper material anyway.
+    readonly property string openverseSources: "stocksnap,rawpixel"
+
     function _fetchOpenverse() {
         const q = root.query.length > 0 ? root.query : "wallpaper";
         const url = `https://api.openverse.org/v1/images/?q=${encodeURIComponent(q)}`
@@ -274,6 +281,13 @@ Singleton {
     function _parseOpenverse(jsonStr) {
         try {
             const data = JSON.parse(jsonStr);
+            // A rejected request answers with `detail` and no results. Defaulting
+            // that to an empty list once turned a broken query parameter into a
+            // silent "no results", with nothing in the log to go on.
+            if (!data.results) {
+                root.fetchError("Openverse: " + JSON.stringify(data.detail ?? data));
+                return;
+            }
             root.totalPages = data.page_count ?? 0;
             const newItems = (data.results ?? []).map(item => ({
                 id:               String(item.id),
