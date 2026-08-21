@@ -383,7 +383,6 @@ MouseArea {
                                 { value: "openverse", displayName: Translation.tr("Openverse") },
                                 { value: "konachan",  displayName: Translation.tr("Konachan") },
                                 { value: "yandere",   displayName: Translation.tr("yande.re") },
-                                { value: "danbooru",  displayName: Translation.tr("Danbooru") },
                             ]
                             textRole: "displayName"
                             onCurrentIndexChanged: {

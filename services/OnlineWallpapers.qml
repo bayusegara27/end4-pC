@@ -90,8 +90,6 @@ Singleton {
             _fetchMoebooru("https://konachan.net", "konachan");
         } else if (root.provider === "yandere") {
             _fetchMoebooru("https://yande.re", "yandere");
-        } else if (root.provider === "danbooru") {
-            _fetchDanbooru();
         } else if (root.provider === "openverse") {
             _fetchOpenverse();
         }
@@ -153,12 +151,6 @@ Singleton {
         "sketchy": "rating:questionable",
         "nsfw":    "",
     })
-    readonly property var danbooruRatingMap: ({
-        "sfw":     "rating:general",
-        "sketchy": "rating:sensitive",
-        "nsfw":    "",
-    })
-
     // konachan and yande.re both run Moebooru, so one fetcher and one parser
     // cover them. ratio:16:9 is what turns an image board into a wallpaper
     // source — without it most results are portrait.
@@ -179,27 +171,12 @@ Singleton {
         fetchProc.running = true;
     }
 
-    // Anonymous Danbooru searches are capped at two tags, and quietly return
-    // almost nothing past that, so the resolution filter has to give way to the
-    // aspect ratio — the one that decides whether a result is a wallpaper.
-    function _fetchDanbooru() {
-        const rating = root.danbooruRatingMap[root.purity] ?? "rating:general";
-        const tags = [rating, root.query.length > 0 ? root.query : "ratio:16:9"]
-            .filter(part => part && part.length > 0).join(" ");
-
-        const url = `https://danbooru.donmai.us/posts.json?limit=${root.keylessPageSize}`
-            + `&page=${root.page}&tags=${encodeURIComponent(tags)}`;
-
-        fetchProc.provider = "danbooru";
-        fetchProc.command = ["curl", "-s", "-A", "quickshell-wallpaper/1.0", url];
-        fetchProc.running = true;
-    }
-
     function _fetchOpenverse() {
         const q = root.query.length > 0 ? root.query : "wallpaper";
         const url = `https://api.openverse.org/v1/images/?q=${encodeURIComponent(q)}`
             + `&page_size=${root.keylessPageSize}&page=${root.page}`
-            + `&size=large&aspect_ratio=wide&mature=false`;
+            + `&size=large&aspect_ratio=wide&mature=false`
+            + `&source=${encodeURIComponent(root.openverseSources)}`;
 
         fetchProc.provider = "openverse";
         fetchProc.command = ["curl", "-s", "-A", "quickshell-wallpaper/1.0", url];
@@ -228,30 +205,6 @@ Singleton {
             root.fetched();
         } catch (e) {
             root.fetchError(provider + " parse error: " + e);
-        }
-    }
-
-    function _parseDanbooru(jsonStr) {
-        try {
-            const data = JSON.parse(jsonStr);
-            root.totalPages = 0;
-            const newItems = data.map(item => ({
-                id:               String(item.id),
-                thumb:            item.preview_file_url ?? "",
-                full:             item.file_url ?? item.large_file_url ?? "",
-                provider:         "danbooru",
-                title:            (item.tag_string_copyright ?? "").split(" ").slice(0, 3).join(", "),
-                author:           (item.tag_string_artist ?? "").split(" ")[0] ?? "",
-                authorUrl:        `https://danbooru.donmai.us/posts/${item.id}`,
-                likes:            item.score ?? 0,
-                width:            item.image_width ?? 0,
-                height:           item.image_height ?? 0,
-                downloadLocation: "",
-            })).filter(item => item.full.length > 0 && item.thumb.length > 0);
-            root.results = root.appending ? root.results.concat(newItems) : newItems;
-            root.fetched();
-        } catch (e) {
-            root.fetchError("Danbooru parse error: " + e);
         }
     }
 
@@ -397,8 +350,6 @@ Singleton {
                 root._parsePexels(fetchProc.buffer);
             } else if (fetchProc.provider === "konachan" || fetchProc.provider === "yandere") {
                 root._parseMoebooru(fetchProc.buffer, fetchProc.provider);
-            } else if (fetchProc.provider === "danbooru") {
-                root._parseDanbooru(fetchProc.buffer);
             } else if (fetchProc.provider === "openverse") {
                 root._parseOpenverse(fetchProc.buffer);
             }
