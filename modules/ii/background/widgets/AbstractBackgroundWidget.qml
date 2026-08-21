@@ -64,12 +64,36 @@ AbstractWidget {
         target: Config
         function onReadyChanged() { refreshPlacementIfNeeded() }
     }
+    // Only these two strategies need the image analysed; "free" places widgets
+    // wherever they were dragged.
+    readonly property bool needsRegionAnalysis: root.placementStrategy === "leastBusy"
+        || root.placementStrategy === "mostBusy"
+        || root.needsColText
+
     function refreshPlacementIfNeeded() {
         if (!Config.ready) return;
-        if (root.placementStrategy === "free" && !root.needsColText) return;
-        leastBusyRegionProc.wallpaperPath = root.wallpaperPath;
-        leastBusyRegionProc.running = false;
-        leastBusyRegionProc.running = true;
+        // Deliberately phrased as "run only when needed" rather than "skip when
+        // free". The wallpaper path lives in the same config file, so changing
+        // the wallpaper reloads the config, and configEntry is briefly
+        // undefined while it does — which made placementStrategy undefined too.
+        // Against the old test that read as "not free", so every widget ran a
+        // 330ms OpenCV analysis on every wallpaper change, three at a time.
+        if (!root.needsRegionAnalysis) return;
+        placementDebounce.restart();
+    }
+
+    // Hovering the wallpaper selector previews each wallpaper as the cursor
+    // passes over it, so the path can change many times a second.
+    Timer {
+        id: placementDebounce
+        interval: 350
+        repeat: false
+        onTriggered: {
+            if (!root.needsRegionAnalysis) return;
+            leastBusyRegionProc.wallpaperPath = root.wallpaperPath;
+            leastBusyRegionProc.running = false;
+            leastBusyRegionProc.running = true;
+        }
     }
     Process {
         id: leastBusyRegionProc

@@ -53,6 +53,12 @@ AbstractBackgroundWidget {
             anchors.fill: parent
             visible: false
 
+            // This card is a few hundred pixels tall, and there are two of these
+            // images for the crossfade. Without a bound, each one decoded the
+            // wallpaper at its native 3840x2160.
+            readonly property int decodeWidth: Math.round(width * 1.6)
+            readonly property int decodeHeight: Math.round(height * 1.6)
+
             property string effectiveSource: "file://" + (GlobalStates.screenLocked && Config.options.background.lockWall !== ""
                 ? Config.options.background.lockWall
                 : Config.options.background.wallpaperPath)
@@ -61,6 +67,8 @@ AbstractBackgroundWidget {
                 id: bgImageA
                 anchors.fill: parent
                 fillMode: Image.PreserveAspectCrop
+                sourceSize.width: bgImage.decodeWidth
+                sourceSize.height: bgImage.decodeHeight
                 asynchronous: true
                 cache: false
                 opacity: 1
@@ -72,6 +80,8 @@ AbstractBackgroundWidget {
                 id: bgImageB
                 anchors.fill: parent
                 fillMode: Image.PreserveAspectCrop
+                sourceSize.width: bgImage.decodeWidth
+                sourceSize.height: bgImage.decodeHeight
                 asynchronous: true
                 cache: false
                 opacity: 0

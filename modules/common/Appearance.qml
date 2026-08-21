@@ -20,7 +20,13 @@ Singleton {
         id: wallColorQuant
         property string wallpaperPath: Config.options.background.wallpaperPath
         property bool wallpaperIsVideo: wallpaperPath.endsWith(".mp4") || wallpaperPath.endsWith(".webm") || wallpaperPath.endsWith(".mkv") || wallpaperPath.endsWith(".avi") || wallpaperPath.endsWith(".mov")
-        source: Qt.resolvedUrl(wallpaperIsVideo ? Config.options.background.thumbnailPath : Config.options.background.wallpaperPath)
+        // Only automatic transparency reads this, and it is the only consumer of
+        // wallpaperVibrancy anywhere. Loading the wallpaper to derive a single
+        // colour that nothing then looks at cost a full decode of a 4K image on
+        // every wallpaper change.
+        source: (Config?.options.appearance.transparency.automatic ?? false)
+            ? Qt.resolvedUrl(wallpaperIsVideo ? Config.options.background.thumbnailPath : Config.options.background.wallpaperPath)
+            : ""
         depth: 0 // 2^0 = 1 color
         rescaleSize: 10
     }

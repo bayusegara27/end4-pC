@@ -217,7 +217,12 @@ MouseArea {
                 anchors.fill: parent
                 visible: Config.options.wallpaperSelector.showBlurBackground
                 fillMode: Image.PreserveAspectCrop
-                source: Config.options.background.wallpaperPath
+                // Loaded only when it is actually drawn, and never larger than
+                // the panel: this is a blurred backdrop, not a wallpaper.
+                source: Config.options.wallpaperSelector.showBlurBackground
+                    ? Config.options.background.wallpaperPath
+                    : ""
+                sourceSize.height: Math.round(height * 1.2)
                 cache: false
                 layer.enabled: true
                 layer.effect: OpacityMask {

@@ -139,17 +139,13 @@ Variants {
 
         property real transitionProgress: 1.0
 
-        // Qt decodes an image at its full resolution unless told otherwise. The
-        // wallpaper selector now happily hands over 5760x3240 scans, which
-        // become a 71MB texture on a 1920x1080 screen where 16MB is
-        // indistinguishable — and the outgoing wallpaper is still resident
-        // during a transition, so it costs double. On a 4GB card already shared
-        // with a game that is the difference between a crossfade and a stall.
-        // 1.4x the screen keeps enough pixels to cover it across the whole
-        // range of aspect ratios the selector allows through (1.45 to 2.4).
-        readonly property real wallpaperOversample: 1.4
-        readonly property int wallpaperDecodeWidth: Math.round(width * wallpaperOversample)
-        readonly property int wallpaperDecodeHeight: Math.round(height * wallpaperOversample)
+        // Qt decodes at full resolution unless told otherwise, so a 3840x2160
+        // wallpaper becomes a 33MB texture on a 1920x1080 screen. Only the
+        // height is bounded: with PreserveAspectCrop, constraining height alone
+        // still yields enough width to cover the screen at every aspect ratio
+        // the selector allows, so nothing is ever upscaled. Constraining both
+        // axes would under-sample anything that is not exactly 16:9.
+        readonly property int wallpaperDecodeHeight: Math.round(height * 1.35)
 
         screen: modelData
         exclusionMode: ExclusionMode.Ignore
@@ -261,7 +257,6 @@ Variants {
                 id: previousWallpaper
                 anchors.fill: parent
                 fillMode: Image.PreserveAspectCrop
-                sourceSize.width: bgRoot.wallpaperDecodeWidth
                 sourceSize.height: bgRoot.wallpaperDecodeHeight
                 cache: true
                 smooth: true
@@ -277,7 +272,6 @@ Variants {
                 id: wallpaper
                 anchors.fill: parent
                 fillMode: Image.PreserveAspectCrop
-                sourceSize.width: bgRoot.wallpaperDecodeWidth
                 sourceSize.height: bgRoot.wallpaperDecodeHeight
                 opacity: (status === Image.Ready && !bgRoot.wallpaperIsVideo && !GlobalStates.isLiveWallpaperRunning) ? 1 : 0
                 cache: false
@@ -410,7 +404,9 @@ Variants {
 
                 StyledImage {
                     anchors.fill: parent
-                    source: bgRoot.wallpaperPath
+                    // An Image loads its source even when nothing shows it, so
+                    // this decoded every wallpaper despite the feature being off.
+                    source: bgRoot.centeredWallpaperEnabled ? bgRoot.wallpaperPath : ""
                     fillMode: Image.PreserveAspectCrop
                     cache: false
                     antialiasing: true

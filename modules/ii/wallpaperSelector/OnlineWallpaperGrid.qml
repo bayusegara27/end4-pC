@@ -60,7 +60,7 @@ Item {
         downloadProc.filePath = fullPath
         downloadProc.applyAfter = true
         downloadProc.command = ["bash", "-c",
-            `mkdir -p '${picturesPath}/Wallpapers' && curl -L --silent '${item.full}' -o '${fullPath}'`
+            `mkdir -p '${picturesPath}/Wallpapers' && curl -L --silent '${item.full}' -o '${fullPath}'` + ` && bash '${Quickshell.shellPath("scripts/images/fit-wallpaper.sh")}' '${fullPath}'`
         ]
         downloadProc.running = true
     }
@@ -274,7 +274,7 @@ Item {
                         downloadProc.filePath = fullPath
                         downloadProc.applyAfter = event.button === Qt.LeftButton
                         downloadProc.command = ["bash", "-c",
-                            `mkdir -p '${picturesPath}/Wallpapers' && curl -L --silent '${delegateItem.model.full}' -o '${fullPath}'`
+                            `mkdir -p '${picturesPath}/Wallpapers' && curl -L --silent '${delegateItem.model.full}' -o '${fullPath}'` + ` && bash '${Quickshell.shellPath("scripts/images/fit-wallpaper.sh")}' '${fullPath}'`
                         ]
                         downloadProc.running = true
                     }
