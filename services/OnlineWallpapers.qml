@@ -86,6 +86,14 @@ Singleton {
             _fetchUnsplash();
         } else if (root.provider === "pexels") {
             _fetchPexels();
+        } else if (root.provider === "konachan") {
+            _fetchMoebooru("https://konachan.net", "konachan");
+        } else if (root.provider === "yandere") {
+            _fetchMoebooru("https://yande.re", "yandere");
+        } else if (root.provider === "danbooru") {
+            _fetchDanbooru();
+        } else if (root.provider === "openverse") {
+            _fetchOpenverse();
         }
     }
 
@@ -127,6 +135,151 @@ Singleton {
         fetchProc.provider = "pexels";
         fetchProc.command  = ["curl", "-s", "-H", `Authorization: ${root.pexelsApiKey}`, url];
         fetchProc.running  = true;
+    }
+
+    // Every provider below is keyless. 20 per page because that is Openverse's
+    // ceiling for anonymous requests, and there is no reason to differ.
+    readonly property int keylessPageSize: 20
+
+    readonly property var minWidthMap: ({
+        "1080p": 1920,
+        "2K":    2560,
+        "4K":    3840,
+    })
+
+    // Ratings are named differently per board; "nsfw" simply drops the filter.
+    readonly property var moebooruRatingMap: ({
+        "sfw":     "rating:safe",
+        "sketchy": "rating:questionable",
+        "nsfw":    "",
+    })
+    readonly property var danbooruRatingMap: ({
+        "sfw":     "rating:general",
+        "sketchy": "rating:sensitive",
+        "nsfw":    "",
+    })
+
+    // konachan and yande.re both run Moebooru, so one fetcher and one parser
+    // cover them. ratio:16:9 is what turns an image board into a wallpaper
+    // source — without it most results are portrait.
+    function _fetchMoebooru(host, provider) {
+        const minWidth = root.minWidthMap[root.resolution] ?? 1920;
+        const tags = [
+            root.moebooruRatingMap[root.purity] ?? "rating:safe",
+            "ratio:16:9",
+            `width:>=${minWidth}`,
+            root.query,
+        ].filter(part => part && part.length > 0).join(" ");
+
+        const url = `${host}/post.json?limit=${root.keylessPageSize}&page=${root.page}`
+            + `&tags=${encodeURIComponent(tags)}`;
+
+        fetchProc.provider = provider;
+        fetchProc.command = ["curl", "-s", "-A", "quickshell-wallpaper/1.0", url];
+        fetchProc.running = true;
+    }
+
+    // Anonymous Danbooru searches are capped at two tags, and quietly return
+    // almost nothing past that, so the resolution filter has to give way to the
+    // aspect ratio — the one that decides whether a result is a wallpaper.
+    function _fetchDanbooru() {
+        const rating = root.danbooruRatingMap[root.purity] ?? "rating:general";
+        const tags = [rating, root.query.length > 0 ? root.query : "ratio:16:9"]
+            .filter(part => part && part.length > 0).join(" ");
+
+        const url = `https://danbooru.donmai.us/posts.json?limit=${root.keylessPageSize}`
+            + `&page=${root.page}&tags=${encodeURIComponent(tags)}`;
+
+        fetchProc.provider = "danbooru";
+        fetchProc.command = ["curl", "-s", "-A", "quickshell-wallpaper/1.0", url];
+        fetchProc.running = true;
+    }
+
+    function _fetchOpenverse() {
+        const q = root.query.length > 0 ? root.query : "wallpaper";
+        const url = `https://api.openverse.org/v1/images/?q=${encodeURIComponent(q)}`
+            + `&page_size=${root.keylessPageSize}&page=${root.page}`
+            + `&size=large&aspect_ratio=wide&mature=false`;
+
+        fetchProc.provider = "openverse";
+        fetchProc.command = ["curl", "-s", "-A", "quickshell-wallpaper/1.0", url];
+        fetchProc.running = true;
+    }
+
+    function _parseMoebooru(jsonStr, provider) {
+        try {
+            const data = JSON.parse(jsonStr);
+            // Moebooru reports no total, so paging stays open-ended.
+            root.totalPages = 0;
+            const newItems = data.map(item => ({
+                id:               String(item.id),
+                thumb:            item.preview_url ?? "",
+                full:             item.jpeg_url ?? item.file_url ?? "",
+                provider:         provider,
+                title:            (item.tags ?? "").split(" ").slice(0, 4).join(", "),
+                author:           item.author ?? "",
+                authorUrl:        item.source ?? "",
+                likes:            item.score ?? 0,
+                width:            item.width ?? 0,
+                height:           item.height ?? 0,
+                downloadLocation: "",
+            })).filter(item => item.full.length > 0);
+            root.results = root.appending ? root.results.concat(newItems) : newItems;
+            root.fetched();
+        } catch (e) {
+            root.fetchError(provider + " parse error: " + e);
+        }
+    }
+
+    function _parseDanbooru(jsonStr) {
+        try {
+            const data = JSON.parse(jsonStr);
+            root.totalPages = 0;
+            const newItems = data.map(item => ({
+                id:               String(item.id),
+                thumb:            item.preview_file_url ?? "",
+                full:             item.file_url ?? item.large_file_url ?? "",
+                provider:         "danbooru",
+                title:            (item.tag_string_copyright ?? "").split(" ").slice(0, 3).join(", "),
+                author:           (item.tag_string_artist ?? "").split(" ")[0] ?? "",
+                authorUrl:        `https://danbooru.donmai.us/posts/${item.id}`,
+                likes:            item.score ?? 0,
+                width:            item.image_width ?? 0,
+                height:           item.image_height ?? 0,
+                downloadLocation: "",
+            })).filter(item => item.full.length > 0 && item.thumb.length > 0);
+            root.results = root.appending ? root.results.concat(newItems) : newItems;
+            root.fetched();
+        } catch (e) {
+            root.fetchError("Danbooru parse error: " + e);
+        }
+    }
+
+    function _parseOpenverse(jsonStr) {
+        try {
+            const data = JSON.parse(jsonStr);
+            root.totalPages = data.page_count ?? 0;
+            const newItems = (data.results ?? []).map(item => ({
+                id:               String(item.id),
+                thumb:            item.thumbnail ?? item.url ?? "",
+                full:             item.url ?? "",
+                provider:         "openverse",
+                // Everything here is Creative Commons, so the licence belongs
+                // next to the title rather than buried.
+                title:            [item.title ?? "", (item.license ?? "").toUpperCase()]
+                                      .filter(part => part.length > 0).join(" · "),
+                author:           item.creator ?? "",
+                authorUrl:        item.creator_url ?? item.foreign_landing_url ?? "",
+                likes:            0,
+                width:            item.width ?? 0,
+                height:           item.height ?? 0,
+                downloadLocation: "",
+            })).filter(item => item.full.length > 0);
+            root.results = root.appending ? root.results.concat(newItems) : newItems;
+            root.fetched();
+        } catch (e) {
+            root.fetchError("Openverse parse error: " + e);
+        }
     }
 
     function _parseWallhaven(jsonStr) {
@@ -242,6 +395,12 @@ Singleton {
                 root._parseUnsplash(fetchProc.buffer);
             } else if (fetchProc.provider === "pexels") {
                 root._parsePexels(fetchProc.buffer);
+            } else if (fetchProc.provider === "konachan" || fetchProc.provider === "yandere") {
+                root._parseMoebooru(fetchProc.buffer, fetchProc.provider);
+            } else if (fetchProc.provider === "danbooru") {
+                root._parseDanbooru(fetchProc.buffer);
+            } else if (fetchProc.provider === "openverse") {
+                root._parseOpenverse(fetchProc.buffer);
             }
         }
     }
