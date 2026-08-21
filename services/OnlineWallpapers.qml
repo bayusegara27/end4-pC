@@ -139,11 +139,24 @@ Singleton {
     // ceiling for anonymous requests, and there is no reason to differ.
     readonly property int keylessPageSize: 20
 
-    readonly property var minWidthMap: ({
-        "1080p": 1920,
-        "2K":    2560,
-        "4K":    3840,
+    // Both dimensions, not just width: the shell draws wallpapers with
+    // PreserveAspectCrop, which scales the image to cover the screen, so an
+    // image only avoids being upscaled when it clears the screen on both axes.
+    // Filtering on width alone let through wide-but-short images.
+    readonly property var minSizeMap: ({
+        "1080p": { width: 1920, height: 1080 },
+        "2K":    { width: 2560, height: 1440 },
+        "4K":    { width: 3840, height: 2160 },
     })
+
+    // Anything cropped to fill the screen looks fine as long as it is roughly
+    // landscape — a few percent off 16:9 is invisible once cropped. Demanding
+    // exactly 16:9 threw away most of the library for no visible gain: on
+    // konachan, "genshin_impact" went from 379 matches to 1420 by accepting
+    // this range instead, and dropping the ratio filter entirely would only
+    // have added another 80 — the genuinely portrait ones, which do crop badly.
+    // 1.45 covers 3:2, 2.4 covers 21:9 ultrawide.
+    readonly property string wallpaperRatioRange: "ratio:1.45..2.4"
 
     // Ratings are named differently per board; "nsfw" simply drops the filter.
     readonly property var moebooruRatingMap: ({
@@ -188,11 +201,12 @@ Singleton {
     }
 
     function _fetchMoebooruPosts(host, provider, tag) {
-        const minWidth = root.minWidthMap[root.resolution] ?? 1920;
+        const minSize = root.minSizeMap[root.resolution] ?? root.minSizeMap["1080p"];
         const tags = [
             root.moebooruRatingMap[root.purity] ?? "rating:safe",
-            "ratio:16:9",
-            `width:>=${minWidth}`,
+            root.wallpaperRatioRange,
+            `width:>=${minSize.width}`,
+            `height:>=${minSize.height}`,
             tag,
         ].filter(part => part && part.length > 0).join(" ");
 
