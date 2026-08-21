@@ -45,6 +45,8 @@ Singleton {
     property string wallpaperSwitchScriptPath: FileUtils.trimFileProtocol(`${Directories.scriptPath}/colors/switchwall.sh`)
     property string liveWallpaperColorSyncScriptPath: FileUtils.trimFileProtocol(`${Directories.scriptPath}/colors/wpe-colorsync.sh`)
     property string wallpaperProviderScriptPath: FileUtils.trimFileProtocol(`${Directories.scriptPath}/colors/wallpaper-provider.sh`)
+    property string wpeLibraryScriptPath: FileUtils.trimFileProtocol(`${Directories.scriptPath}/colors/wpe-library.sh`)
+    property string wpeSetWallpaperScriptPath: FileUtils.trimFileProtocol(`${Directories.scriptPath}/colors/wpe-set-wallpaper.sh`)
     property string wpeEnginePath: FileUtils.trimFileProtocol(`${Directories.config}/wpe-manager/engine.json`)
     property string defaultAiPrompts: Quickshell.shellPath("defaults/ai/prompts")
     property string userAiPrompts: FileUtils.trimFileProtocol(`${Directories.shellConfig}/ai/prompts`)

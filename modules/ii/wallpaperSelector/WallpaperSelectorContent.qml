@@ -16,7 +16,14 @@ MouseArea {
     property real previewCellAspectRatio: 4 / 3
     property bool useDarkMode: Appearance.m3colors.darkmode
     property bool showControls: false
-    property string source: "local"
+    // Open on whichever source actually owns the background, so picking a
+    // wallpaper from Settings never lands on a browser that cannot change it.
+    property string source: Config.options.background.provider === "wallpaperengine"
+        ? "wallpaperengine"
+        : "local"
+    // "wallpaperengine" reads a local library, so it must not get the online
+    // providers' search-and-download UI.
+    readonly property bool isOnlineSource: root.source !== "local" && root.source !== "wallpaperengine"
     property string selectedResolution: "1080p"
     property bool toolbarVisible: showControls || Config.options.wallpaperSelector.showSearchbar
     property bool filterFieldFocused: false
@@ -35,6 +42,26 @@ MouseArea {
             alwaysVisible: Config.options.wallpaperSelector.userPath?.trim().length > 0 
         }
     ]
+
+    // Indices into quickDirs whose folder exists right now.
+    property var presentQuickDirs: []
+
+    Process {
+        id: quickDirCheck
+        running: true
+        command: ["bash", "-c",
+            root.quickDirs
+                .map((dir, index) => `[ -d "${FileUtils.trimFileProtocol(dir.path ?? "")}" ] && echo ${index}`)
+                .join("; ") + "; true"
+        ]
+        stdout: StdioCollector {
+            onStreamFinished: {
+                root.presentQuickDirs = text.trim().split("\n")
+                    .filter(line => line.length > 0)
+                    .map(line => parseInt(line));
+            }
+        }
+    }
 
     // The grid asks for thumbnails at a size derived from its cell size, so the
     // needed size changes with the window and the column count. `switchToDownloads`
@@ -273,9 +300,14 @@ MouseArea {
                                     delegate: RippleButton {
                                         id: dirBtn
                                         required property var modelData
+                                        required property int index
                                         implicitHeight: 38
                                         buttonRadius: height / 2
-                                        visible: modelData.alwaysVisible
+                                        // Homework and Random point at folders that
+                                        // only exist once their feature has been
+                                        // used, so upstream shows shortcuts that
+                                        // open nothing. Hide those until they exist.
+                                        visible: modelData.alwaysVisible && root.presentQuickDirs.includes(dirBtn.index)
                                         toggled: Wallpapers.directory === Qt.resolvedUrl(modelData.path)
                                         colBackgroundToggled: Appearance.colors.colSecondaryContainer
                                         colBackgroundToggledHover: Appearance.colors.colSecondaryContainerHover
@@ -303,7 +335,7 @@ MouseArea {
                         }
 
                         Loader {
-                            active: root.source !== "local"
+                            active: root.isOnlineSource
                             visible: active
                             sourceComponent: RowLayout {
                                 spacing: 4
@@ -341,9 +373,10 @@ MouseArea {
 
                         StyledComboBox {
                             id: sourceCombo
-                            implicitWidth: 120
+                            implicitWidth: 150
                             model: [
                                 { value: "local",     displayName: Translation.tr("Local") },
+                                { value: "wallpaperengine", displayName: Translation.tr("Wallpaper Engine") },
                                 { value: "wallhaven", displayName: Translation.tr("Wallhaven") },
                                 { value: "unsplash",  displayName: Translation.tr("Unsplash") },
                                 { value: "pexels",    displayName: Translation.tr("Pexels") },
@@ -352,6 +385,12 @@ MouseArea {
                             onCurrentIndexChanged: {
                                 root.source = model[currentIndex].value
                                 root.forceActiveFocus()
+                            }
+                            // root.source defaults to whichever provider owns the
+                            // background; line the dropdown up with it.
+                            Component.onCompleted: {
+                                const index = model.findIndex(entry => entry.value === root.source)
+                                if (index >= 0) currentIndex = index
                             }
                         }
 
@@ -392,7 +431,9 @@ MouseArea {
                     Loader {
                         id: gridLoader
                         anchors.fill: parent
-                        sourceComponent: root.source === "local" ? localGridComponent : onlineGridComponent
+                        sourceComponent: root.source === "local" ? localGridComponent
+                            : root.source === "wallpaperengine" ? wpeGridComponent
+                            : onlineGridComponent
                     }
 
                     Component {
@@ -402,6 +443,14 @@ MouseArea {
                             previewCellAspectRatio: root.previewCellAspectRatio
                             onWallpaperSelected: path => root.selectWallpaperPath(path)
                             onUpdateThumbnailsRequested: root.updateThumbnails()
+                        }
+                    }
+
+                    Component {
+                        id: wpeGridComponent
+                        WallpaperEngineGrid {
+                            columns: root.columns
+                            previewCellAspectRatio: root.previewCellAspectRatio
                         }
                     }
 
@@ -511,7 +560,7 @@ MouseArea {
                         }
 
                         Loader {
-                            active: root.source !== "local"
+                            active: root.isOnlineSource
                             visible: active
                             sourceComponent: Toolbar {
                                 ToolbarTextField {
@@ -544,6 +593,41 @@ MouseArea {
                             }
                         }
 
+                        Loader {
+                            active: root.source === "wallpaperengine"
+                            visible: active
+                            sourceComponent: Toolbar {
+                                ToolbarTextField {
+                                    id: wpeSearchField
+                                    placeholderText: Translation.tr("Search Wallpaper Engine")
+                                    clip: true
+                                    font.pixelSize: Appearance.font.pixelSize.small
+                                    onTextChanged: Wallpapers.searchQuery = text
+                                    onActiveFocusChanged: root.filterFieldFocused = activeFocus
+                                    Connections {
+                                        target: GlobalStates
+                                        function onWallpaperSelectorOpenChanged() {
+                                            if (!GlobalStates.wallpaperSelectorOpen) wpeSearchField.text = ""
+                                        }
+                                    }
+                                }
+                                IconToolbarButton {
+                                    implicitWidth: height
+                                    text: "open_in_new"
+                                    onClicked: {
+                                        // Playlists, per-wallpaper properties and
+                                        // filters live in wpe-manager; this grid
+                                        // deliberately does not duplicate them.
+                                        Quickshell.execDetached(["wpe-manager"])
+                                        GlobalStates.wallpaperSelectorOpen = false
+                                    }
+                                    StyledToolTip {
+                                        text: Translation.tr("Open wpe-manager")
+                                    }
+                                }
+                            }
+                        }
+
                         ToolbarPairedFab {
                             iconText: "close"
                             onClicked: {
@@ -560,6 +644,10 @@ MouseArea {
     Connections {
         target: GlobalStates
         function onWallpaperSelectorOpenChanged() {
+            if (GlobalStates.wallpaperSelectorOpen) {
+                quickDirCheck.running = false;
+                quickDirCheck.running = true;
+            }
             if (GlobalStates.wallpaperSelectorOpen && monitorIsFocused) {
                 if (root.source === "local")
                     filterField.forceActiveFocus()

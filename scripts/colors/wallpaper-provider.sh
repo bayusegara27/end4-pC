@@ -140,6 +140,9 @@ restore_shell_wallpaper() {
 
 apply_provider() {
     local provider="$1"
+    # Set when the caller is itself about to put a wallpaper up, so bringing the
+    # previous one back would only cause a visible double switch.
+    local skip_restore="${2:-}"
     case "$provider" in
         wallpaperengine)
             manager_running || start_wallpaperengine
@@ -147,7 +150,7 @@ apply_provider() {
         shell)
             if manager_running || backend_running; then
                 stop_wallpaperengine
-                restore_shell_wallpaper
+                [[ -z "$skip_restore" ]] && restore_shell_wallpaper
             fi
             ;;
         *)
@@ -170,11 +173,24 @@ case "${1:-}" in
                 exit 1
                 ;;
         esac
+        skip_restore=""
+        [[ "${3:-}" == "--no-restore" ]] && skip_restore="1"
         set_config_string '.background.provider' "$new_provider" || exit 1
-        apply_provider "$new_provider"
+        apply_provider "$new_provider" "$skip_restore"
         ;;
     apply)
         apply_provider "$(get_provider)"
+        ;;
+    # The manager is stopped and started separately by wpe-set-wallpaper.sh: the
+    # daemon reads state.json only at startup, so an assignment written while it
+    # runs would be overwritten from its stale memory. Note this leaves the
+    # running backend alone, so the incoming daemon can do its own overlapping
+    # swap instead of the screen going black in between.
+    stop-manager)
+        manager_pids | kill_pids
+        ;;
+    start-manager)
+        manager_running || start_wallpaperengine
         ;;
     *)
         echo "Usage: $(basename "$0") get|set <provider>|apply" >&2
