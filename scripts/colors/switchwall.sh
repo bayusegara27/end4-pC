@@ -203,6 +203,15 @@ switch() {
         fi
 
         if [[ -z "$colors_only_flag" ]]; then
+            # Actually putting a wallpaper up through the shell means the shell
+            # owns the background from here on. Leaving linux-wallpaperengine
+            # running would render straight over it — the desktop menu's video
+            # wallpaper and a Workshop scene would otherwise both be on the
+            # background layer at once. --no-restore because we are about to set
+            # a wallpaper ourselves.
+            if [[ "$("$SCRIPT_DIR/wallpaper-provider.sh" get 2>/dev/null)" == "wallpaperengine" ]]; then
+                "$SCRIPT_DIR/wallpaper-provider.sh" set shell --no-restore
+            fi
             kill_existing_mpvpaper
         fi
 
