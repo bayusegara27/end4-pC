@@ -93,21 +93,40 @@ if command -v gpu-screen-recorder &>/dev/null; then
         fi
     fi
 
+    GSR_LOG="$(mktemp -t gsr-record.XXXXXX.log)"
+
     if [[ $FULLSCREEN_FLAG -eq 1 ]]; then
-        gpu-screen-recorder -w screen -f 60 "${AUDIO_ARGS[@]}" -o "$OUT_FILE"
+        GSR_ARGS=(-w screen -f 60 "${AUDIO_ARGS[@]}" -o "$OUT_FILE")
     else
         if [[ -z "$MANUAL_REGION" ]]; then
             if ! region="$(slurp -f "%wx%h+%x+%y" 2>&1)"; then
                 notify-send "Recording cancelled" "Selection was cancelled" -a 'Recorder' -i 'screen_record' & disown
                 set_recording_state false
+                rm -f "$GSR_LOG"
                 exit 1
             fi
         else
             region="$MANUAL_REGION"
         fi
-        gpu-screen-recorder -w "$region" -f 60 "${AUDIO_ARGS[@]}" -o "$OUT_FILE"
+        GSR_ARGS=(-w "$region" -f 60 "${AUDIO_ARGS[@]}" -o "$OUT_FILE")
     fi
+
+    gpu-screen-recorder "${GSR_ARGS[@]}" >"$GSR_LOG" 2>&1
+    GSR_RC=$?
     set_recording_state false
+
+    # Gagal start (mis. VRAM habis -> NVENC tidak bisa init CUDA) dulu tidak
+    # memunculkan apa pun, karena "$OUT_FILE" tidak pernah sempat dibuat dan
+    # blok notifikasi di bawah dilewati. Start tetap senyap, hanya gagal yang bersuara.
+    if command -v gsr-diagnose >/dev/null 2>&1; then
+        gsr-diagnose "$GSR_LOG" "$GSR_RC" "Recorder" || { rm -f "$GSR_LOG"; exit 1; }
+    elif [[ $GSR_RC -ne 0 ]]; then
+        notify-send -u critical "Recording failed" \
+            "$(grep -m1 -i 'gsr error' "$GSR_LOG" | cut -c1-160)" -a 'Recorder' -i 'screen_record' & disown
+        rm -f "$GSR_LOG"
+        exit 1
+    fi
+    rm -f "$GSR_LOG"
 
     if [[ -f "$OUT_FILE" ]]; then
         # Generate lightweight static video thumbnail for instant notification preview

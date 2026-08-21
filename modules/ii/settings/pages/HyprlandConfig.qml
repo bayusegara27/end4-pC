@@ -1,5 +1,6 @@
 import QtQuick
 import QtQuick.Layouts
+import qs
 import Quickshell.Io
 import Quickshell
 import qs.modules.common.functions
@@ -335,6 +336,223 @@ ContentPage {
         }
 
         // Visual & Aesthetics
+        // Cursor — visual picker backed by ~/.local/bin/cursorctl, which writes
+        // every cursor sink at once (GTK/Qt/XWayland/Flatpak/Hyprland) so the
+        // choice made here cannot end up applying to only some windows.
+        ContentSection {
+            id: cursorSection
+            icon: "mouse"
+            shape: MaterialShape.Shape.Arrow
+            title: Translation.tr("Cursor")
+
+            readonly property string cursorHome: Quickshell.env("HOME") ?? ""
+            readonly property string cursorPath: `${cursorHome}/.local/bin/cursorctl`
+            property var cursorThemes: []
+            property string currentCursor: ""
+            property int currentCursorSize: 24
+            property bool cursorBusy: false
+            property bool cursorSyncing: false
+
+            Component.onCompleted: cursorListProc.running = true
+
+            // The list is only read once per page load, so a theme installed via
+            // ~/Cursors while the panel sat open would not show up (and a removed
+            // one would linger). Re-scan whenever the panel is opened.
+            Connections {
+                target: GlobalStates
+                function onSettingsOpenChanged() {
+                    if (GlobalStates.settingsOpen) cursorListProc.running = true
+                }
+            }
+
+            Process {
+                id: cursorListProc
+                command: [cursorSection.cursorPath, "themes-json"]
+                stdout: StdioCollector {
+                    onStreamFinished: {
+                        try {
+                            const data = JSON.parse(text)
+                            cursorSection.cursorThemes = data.themes
+                            cursorSection.currentCursor = data.current
+                            cursorSection.currentCursorSize = data.size
+                            cursorSection.cursorSyncing = true
+                            cursorSizeSpin.value = data.size
+                            cursorSection.cursorSyncing = false
+                        } catch (e) {
+                            cursorSection.cursorThemes = []
+                        }
+                        cursorSection.cursorBusy = false
+                    }
+                }
+            }
+
+            Process {
+                id: cursorApplyProc
+                onExited: cursorListProc.running = true
+            }
+
+            GroupedList {
+                ConfigSpinBox {
+                    id: cursorSizeSpin
+                    icon: "zoom_in"
+                    text: Translation.tr("Cursor size")
+                    value: 24
+                    from: 16; to: 96; stepSize: 2
+                    onValueChanged: {
+                        if (cursorSection.cursorSyncing) return
+                        if (value === cursorSection.currentCursorSize) return
+                        cursorSizeApplyTimer.restart()
+                    }
+                    // Debounced: the spinbox fires on every step, and each apply
+                    // touches a dozen files plus a flatpak override.
+                    Timer {
+                        id: cursorSizeApplyTimer
+                        interval: 600
+                        onTriggered: {
+                            if (cursorSection.currentCursor === "") return
+                            cursorSection.currentCursorSize = cursorSizeSpin.value
+                            cursorSection.cursorBusy = true
+                            cursorApplyProc.command = [cursorSection.cursorPath, "apply",
+                                                       cursorSection.currentCursor,
+                                                       String(cursorSizeSpin.value)]
+                            cursorApplyProc.running = true
+                        }
+                    }
+                }
+            }
+
+            Rectangle {
+                Layout.fillWidth: true
+                Layout.topMargin: 4
+                implicitHeight: cursorGrid.implicitHeight + 24
+                radius: Appearance.rounding.normal
+                color: Appearance.colors.colLayer1
+
+                Flow {
+                    id: cursorGrid
+                    anchors.fill: parent
+                    anchors.margins: 12
+                    spacing: 8
+
+                    Repeater {
+                        model: cursorSection.cursorThemes
+                        delegate: Rectangle {
+                            id: cursorCard
+                            required property var modelData
+                            readonly property bool active: modelData.name === cursorSection.currentCursor
+
+                            width: 104
+                            height: 112
+                            radius: Appearance.rounding.small
+                            color: active ? Appearance.colors.colPrimaryContainer
+                                          : (cursorCardArea.containsMouse ? Appearance.colors.colLayer2Hover
+                                                                          : Appearance.colors.colLayer2)
+
+                            Behavior on color {
+                                animation: Appearance.animation.elementMoveFast.colorAnimation.createObject(this)
+                            }
+
+                            Column {
+                                anchors.centerIn: parent
+                                spacing: 6
+
+                                StyledImage {
+                                    anchors.horizontalCenter: parent.horizontalCenter
+                                    width: 48; height: 48
+                                    fillMode: Image.PreserveAspectFit
+                                    sourceSize.width: 64
+                                    sourceSize.height: 64
+                                    // Never interpolate: several themes here are pixel art
+                                    smooth: false
+                                    mipmap: false
+                                    source: cursorCard.modelData.preview !== ""
+                                            ? `file://${cursorCard.modelData.preview}` : ""
+                                }
+
+                                StyledText {
+                                    anchors.horizontalCenter: parent.horizontalCenter
+                                    width: 88
+                                    horizontalAlignment: Text.AlignHCenter
+                                    maximumLineCount: 2
+                                    wrapMode: Text.Wrap
+                                    elide: Text.ElideRight
+                                    font.pixelSize: Appearance.font.pixelSize.smaller
+                                    text: cursorCard.modelData.name
+                                    color: cursorCard.active ? Appearance.colors.colOnPrimaryContainer
+                                                             : Appearance.colors.colOnLayer1
+                                }
+                            }
+
+                            MaterialSymbol {
+                                anchors.top: parent.top
+                                anchors.right: parent.right
+                                anchors.margins: 6
+                                visible: cursorCard.active
+                                text: "check_circle"
+                                iconSize: Appearance.font.pixelSize.normal
+                                color: Appearance.colors.colOnPrimaryContainer
+                            }
+
+                            MouseArea {
+                                id: cursorCardArea
+                                anchors.fill: parent
+                                hoverEnabled: true
+                                cursorShape: Qt.PointingHandCursor
+                                onClicked: {
+                                    if (cursorCard.active) return
+                                    cursorSection.currentCursor = cursorCard.modelData.name
+                                    cursorSection.cursorBusy = true
+                                    cursorApplyProc.command = [cursorSection.cursorPath, "apply",
+                                                               cursorCard.modelData.name,
+                                                               String(cursorSizeSpin.value)]
+                                    cursorApplyProc.running = true
+                                }
+                            }
+                        }
+                    }
+
+                    StyledText {
+                        visible: cursorSection.cursorThemes.length === 0
+                        text: Translation.tr("No cursor themes found.")
+                        color: Appearance.colors.colSubtext
+                    }
+                }
+            }
+
+            NoticeBox {
+                Layout.fillWidth: true
+                Layout.topMargin: 12
+                text: Translation.tr("Drop any cursor archive, folder or Windows pack into ~/Cursors and it installs and applies itself. Every toolkit is written at once, so no app is left behind.")
+
+                Item { Layout.fillWidth: true }
+
+                RippleButtonWithIcon {
+                    Layout.fillWidth: false
+                    buttonRadius: Appearance.rounding.small
+                    materialIcon: "folder_open"
+                    mainText: Translation.tr("Open ~/Cursors")
+                    onClicked: Quickshell.execDetached(["xdg-open", `${cursorSection.cursorHome}/Cursors`])
+                    colBackground: ColorUtils.transparentize(Appearance.colors.colPrimaryContainer)
+                    colBackgroundHover: Appearance.colors.colPrimaryContainerHover
+                    colRipple: Appearance.colors.colPrimaryContainerActive
+                }
+
+                RippleButtonWithIcon {
+                    Layout.fillWidth: false
+                    buttonRadius: Appearance.rounding.small
+                    materialIcon: cursorSection.cursorBusy ? "hourglass_top" : "refresh"
+                    mainText: Translation.tr("Refresh")
+                    onClicked: {
+                        cursorSection.cursorBusy = true
+                        cursorListProc.running = true
+                    }
+                    colBackground: ColorUtils.transparentize(Appearance.colors.colSecondaryContainer)
+                    colBackgroundHover: Appearance.colors.colSecondaryContainerHover
+                    colRipple: Appearance.colors.colSecondaryContainerActive
+                }
+            }
+        }
+
         ContentSection {
             icon: "deblur"
             shape: MaterialShape.Shape.PixelCircle
