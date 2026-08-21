@@ -151,16 +151,49 @@ Singleton {
         "sketchy": "rating:questionable",
         "nsfw":    "",
     })
+    // Image board tags are exact identifiers, not free text: "genshin" matches
+    // nothing at all, while "genshin_impact" has thousands of posts. Typed
+    // queries are therefore resolved to a real tag first, via the board's own
+    // tag search, taking the most-used match. Cached per provider so paging
+    // does not repeat the lookup.
+    property var resolvedTags: ({})
+
+    function _normalizeQuery(text) {
+        return text.trim().toLowerCase().replace(/\s+/g, "_");
+    }
+
     // konachan and yande.re both run Moebooru, so one fetcher and one parser
     // cover them. ratio:16:9 is what turns an image board into a wallpaper
     // source — without it most results are portrait.
     function _fetchMoebooru(host, provider) {
+        const normalized = root._normalizeQuery(root.query);
+        if (normalized.length === 0) {
+            root._fetchMoebooruPosts(host, provider, "");
+            return;
+        }
+
+        const cacheKey = `${provider}:${normalized}`;
+        if (root.resolvedTags[cacheKey] !== undefined) {
+            root._fetchMoebooruPosts(host, provider, root.resolvedTags[cacheKey]);
+            return;
+        }
+
+        tagResolveProc.host = host;
+        tagResolveProc.provider = provider;
+        tagResolveProc.cacheKey = cacheKey;
+        tagResolveProc.fallback = normalized;
+        tagResolveProc.command = ["curl", "-s", "-A", "quickshell-wallpaper/1.0",
+            `${host}/tag.json?name=${encodeURIComponent("*" + normalized + "*")}&order=count&limit=1`];
+        tagResolveProc.running = true;
+    }
+
+    function _fetchMoebooruPosts(host, provider, tag) {
         const minWidth = root.minWidthMap[root.resolution] ?? 1920;
         const tags = [
             root.moebooruRatingMap[root.purity] ?? "rating:safe",
             "ratio:16:9",
             `width:>=${minWidth}`,
-            root.query,
+            tag,
         ].filter(part => part && part.length > 0).join(" ");
 
         const url = `${host}/post.json?limit=${root.keylessPageSize}&page=${root.page}`
@@ -169,6 +202,36 @@ Singleton {
         fetchProc.provider = provider;
         fetchProc.command = ["curl", "-s", "-A", "quickshell-wallpaper/1.0", url];
         fetchProc.running = true;
+    }
+
+    Process {
+        id: tagResolveProc
+        property string host: ""
+        property string provider: ""
+        property string cacheKey: ""
+        property string fallback: ""
+        property string buffer: ""
+
+        onRunningChanged: { if (running) buffer = ""; }
+        stdout: SplitParser { onRead: data => tagResolveProc.buffer += data }
+
+        onExited: (exitCode) => {
+            let tag = tagResolveProc.fallback;
+            if (exitCode === 0) {
+                try {
+                    const matches = JSON.parse(tagResolveProc.buffer);
+                    // No match at all: keep the typed text so the search simply
+                    // comes back empty rather than silently showing everything.
+                    if (matches.length > 0 && matches[0].name) tag = matches[0].name;
+                } catch (e) {
+                    // fall through to the typed text
+                }
+            }
+            const cache = root.resolvedTags;
+            cache[tagResolveProc.cacheKey] = tag;
+            root.resolvedTags = cache;
+            root._fetchMoebooruPosts(tagResolveProc.host, tagResolveProc.provider, tag);
+        }
     }
 
     function _fetchOpenverse() {

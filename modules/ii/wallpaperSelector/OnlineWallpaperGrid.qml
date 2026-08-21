@@ -313,7 +313,13 @@ Item {
             StyledText {
                 Layout.alignment: Qt.AlignHCenter
                 horizontalAlignment: Text.AlignHCenter
-                text: Translation.tr("No results — try fetching again")
+                // Openverse only indexes Creative Commons material, so franchise
+                // art is never going to be there however many times you retry.
+                text: root.provider === "openverse" && OnlineWallpapers.query.length > 0
+                    ? Translation.tr("No Creative Commons images match that. Try Konachan or yande.re for anime and game art.")
+                    : Translation.tr("No results — try fetching again")
+                wrapMode: Text.WordWrap
+                Layout.maximumWidth: 420
                 color: Appearance.colors.colSubtext
             }
 
