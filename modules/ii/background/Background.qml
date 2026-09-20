@@ -246,7 +246,6 @@ Variants {
                 anchors.fill: parent
                 fillMode: Image.PreserveAspectCrop
                 sourceSize: bgRoot.wallpaperSourceSize
-                opacity: (status === Image.Ready && !bgRoot.wallpaperIsVideo && !GlobalStates.isLiveWallpaperRunning) ? 1 : 0
                 cache: true
                 smooth: true
                 mipmap: true
