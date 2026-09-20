@@ -431,7 +431,6 @@ Singleton {
             } else {
                 console.warn("[Notifications] Action not found:", notifIdentifier);
             }
-            }
         } 
         else {
             console.log("Notification not found in server: " + id);
