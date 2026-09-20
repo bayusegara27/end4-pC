@@ -44,6 +44,9 @@ Singleton {
         translationsDir: root.generatedTranslationsDir
         onLanguagesScanned: (languages) => {
             root.availableGeneratedLanguages = [...languages];
+            if (languages.indexOf(root.languageCode) !== -1) {
+                generatedTranslationFileView.reread();
+            }
         }
     }
 
@@ -52,7 +55,11 @@ Singleton {
         translationFileView.languageCode = root.languageCode;
         generatedTranslationFileView.languageCode = root.languageCode;
         translationFileView.reread();
-        generatedTranslationFileView.reread();
+        if (root.availableGeneratedLanguages.indexOf(root.languageCode) !== -1) {
+            generatedTranslationFileView.reread();
+        } else {
+            root.generatedTranslations = {};
+        }
     }
 
     TranslationReader {

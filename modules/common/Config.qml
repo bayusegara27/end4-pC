@@ -240,6 +240,7 @@ Singleton {
                         property string placementStrategy: "free"
                         property real x: 200
                         property real y: 200
+                        property real z: 0
                         property string sizeMode: "1x2"
                         property int maxVisibleMembers: 4
                     }

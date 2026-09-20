@@ -297,8 +297,6 @@ ContentPage {
                         Config.options.background.splitSide = newValue
                     }
                 }
-                    }
-                }
 
                 ConfigSpinBox {
                     icon: "timer"

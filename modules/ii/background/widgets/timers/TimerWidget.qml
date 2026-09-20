@@ -129,12 +129,7 @@ AbstractBackgroundWidget {
     Grid {
         id: row
         columns: root.isVertical ? 1 : 3
-        rows: root.isVertical ? 3 : 1
         spacing: root.cardSpacing
-
-        Behavior on columns {
-            NumberAnimation { duration: 300; easing.type: Easing.OutCubic }
-        }
 
         // Pomodoro
         TimerCard {

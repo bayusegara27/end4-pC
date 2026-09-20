@@ -245,7 +245,7 @@ AbstractBackgroundWidget {
                             width: ListView.view.width
                             height: 22
 
-                            readonly property bool isBadge: !rightPanel.expanded && root.memberCount > memberListVertical.maxCollapsed && index === memberListVertical.maxCollapsed
+                            readonly property bool isBadge: !rightPanel.expanded && root.memberCount > (ListView.view?.maxCollapsed ?? 3) && index === (ListView.view?.maxCollapsed ?? 3)
                             readonly property bool isMinimize: rightPanel.expanded && index === root.memberCount
                             readonly property var modelData: (!isBadge && !isMinimize && index < root.memberCount) ? root.members[index] : null
 
@@ -323,7 +323,7 @@ AbstractBackgroundWidget {
                                             iconSize: 14
                                         }
                                         StyledText {
-                                            text: "+" + (root.memberCount - memberListVertical.maxCollapsed) + " Show more"
+                                            text: "+" + (root.memberCount - (ListView.view?.maxCollapsed ?? 3)) + " Show more"
                                             font.pixelSize: Appearance.font.pixelSize.smallest
                                             font.weight: Font.DemiBold
                                             color: Appearance.colors.colOnPrimaryContainer
@@ -374,7 +374,7 @@ AbstractBackgroundWidget {
                                     cursorShape: Qt.PointingHandCursor
                                     onClicked: {
                                         rightPanel.expanded = false
-                                        memberListVertical.positionViewAtBeginning()
+                                        ListView.view?.positionViewAtBeginning()
                                     }
                                 }
                             }

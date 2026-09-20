@@ -42,13 +42,19 @@ Item { // Window
     property real workspaceWidth: 0
     property real workspaceHeight: 0
 
+    property var windowAddresses: HyprlandData.addresses
+    property var windowByAddress: HyprlandData.windowByAddress
+
     property real tiledCount: {
         if (!windowData || windowData.floating || windowData.fullscreen) return 0;
         const wsId = windowData.workspace?.id;
         if (!wsId) return 0;
+        const addrs = root.windowAddresses ?? HyprlandData.addresses;
+        const winMap = root.windowByAddress ?? HyprlandData.windowByAddress;
+        if (!addrs || !Array.isArray(addrs) || !winMap) return 0;
         let count = 0;
-        for (const addr of root.windowAddresses) {
-            const w = root.windowByAddress[addr];
+        for (const addr of addrs) {
+            const w = winMap[addr];
             if (w && w.workspace?.id === wsId && !w.floating && !w.fullscreen) count++;
         }
         return count;
