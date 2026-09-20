@@ -344,6 +344,23 @@ ContentPage {
             title: Translation.tr("Dynamic Island")
 
             GroupedList {
+                ConfigSwitch {
+                    text: Translation.tr("Enable Dynamic Island")
+                    checked: GlobalStates.dynamicIslandEnabled
+                    onCheckedChanged: {
+                        let middle = [...Config.options.bar.layouts.middleLayout]
+                        if (checked) {
+                            if (!middle.includes("dynamicIsland")) {
+                                Config.options.bar.layouts.middleLayout = ["dynamicIsland"]
+                            }
+                        } else {
+                            if (middle.includes("dynamicIsland")) {
+                                Config.options.bar.layouts.middleLayout = ["clockWidget"]
+                            }
+                        }
+                    }
+                }
+
                 ConfigSelectionArray {
                     text: Translation.tr("Left widget")
                     icon: "right_panel_open"
