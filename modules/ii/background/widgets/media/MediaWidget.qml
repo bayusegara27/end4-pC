@@ -123,8 +123,8 @@ AbstractBackgroundWidget {
 
     Process {
         id: coverArtDownloader
-        property string targetFile: root.artUrl
-        property string artFilePath: root.artFilePath
+        property string targetFile: root.artUrl ?? ""
+        property string artFilePath: root.artFilePath ?? ""
         command: ["bash", "-c", `[ -f ${artFilePath} ] || curl -sSL '${targetFile}' -o '${artFilePath}'`]
         onExited: { root.downloaded = true }
     }
