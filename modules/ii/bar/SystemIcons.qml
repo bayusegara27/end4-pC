@@ -140,8 +140,6 @@ Item {
             id: notifLoader
             active: Notifications.silent || Notifications.unread > 0
             visible: active
-            implicitWidth: item?.implicitWidth ?? 0
-            implicitHeight: item?.implicitHeight ?? 0
             source: "NotificationUnreadCount.qml"
         }
     }
