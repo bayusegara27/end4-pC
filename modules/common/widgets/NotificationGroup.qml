@@ -80,14 +80,13 @@ MouseArea {
             easing.bezierCurve: Appearance.animation.elementMove.bezierCurve
         }
         onFinished: () => {
-            root.notifications.forEach((notif) => {
-                Qt.callLater(() => {
-                    if (destroyAnimation.discardFromHistory || !root.popup) {
-                        Notifications.discardNotification(notif.notificationId);
-                    } else {
-                        Notifications.timeoutNotification(notif.notificationId);
-                    }
-                });
+            const ids = root.notifications.map((notif) => notif.notificationId);
+            Qt.callLater(() => {
+                if (destroyAnimation.discardFromHistory || !root.popup) {
+                    Notifications.discardNotifications(ids);
+                } else {
+                    ids.forEach(id => Notifications.timeoutNotification(id));
+                }
             });
         }
     }

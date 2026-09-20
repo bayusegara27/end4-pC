@@ -137,7 +137,10 @@ if args.termscheme is not None:
         json_termscheme = f.read()
     term_source_colors = json.loads(json_termscheme)['dark' if darkmode else 'light']
 
-    primary_color_argb = hex_to_argb(material_colors.get('primary_paletteKeyColor', material_colors.get('primary', '#87b6af')))
+    # materialyoucolor >= 3 renamed 'primary_paletteKeyColor' to 'primaryPaletteKeyColor'.
+    # Accept both and fallback to primary color so the script never crashes.
+    primary_key_color = material_colors.get('primaryPaletteKeyColor')         or material_colors.get('primary_paletteKeyColor')         or material_colors.get('primary', '#87b6af')
+    primary_color_argb = hex_to_argb(primary_key_color)
     for color, val in term_source_colors.items():
         if(args.scheme == 'monochrome') :
             term_colors[color] = val

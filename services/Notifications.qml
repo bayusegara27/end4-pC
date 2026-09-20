@@ -344,21 +344,26 @@ Singleton {
     }
 
     function discardNotification(id) {
-        console.log("[Notifications] Discarding notification with ID: " + id);
-        const index = root.list.findIndex((notif) => notif.notificationId === id);
-        const notifServerIndex = notifServer.trackedNotifications.values.findIndex((notif) => notif.id + root.idOffset === id);
-        if (index !== -1) {
-            root.list.splice(index, 1);
+        root.discardNotifications([id]);
+    }
+
+    function discardNotifications(ids) {
+        console.log("[Notifications] Discarding notifications with IDs: " + ids.join(", "));
+        const idSet = new Set(ids);
+        const remaining = root.list.filter((notif) => !idSet.has(notif.notificationId));
+        if (remaining.length !== root.list.length) {
+            const removedCount = root.list.length - remaining.length;
             if (root.unread > 0) {
-                root.unread = Math.max(0, root.unread - 1);
+                root.unread = Math.max(0, root.unread - removedCount);
             }
+            root.list = remaining;
             notifFileView.setText(stringifyList(root.list));
             triggerListChange();
-            root.discard(id);
         }
-        if (notifServerIndex !== -1) {
-            notifServer.trackedNotifications.values[notifServerIndex].dismiss();
-        }
+        notifServer.trackedNotifications.values
+            .filter((notif) => idSet.has(notif.id + root.idOffset))
+            .forEach((notif) => notif.dismiss());
+        ids.forEach((id) => root.discard(id));
     }
 
     function discardAllNotifications() {
@@ -387,7 +392,7 @@ Singleton {
         const index = root.list.findIndex((notif) => notif.notificationId === id);
         if (root.list[index] != null) {
             root.list[index].timerPaused = true;
-            if (root.list[index].timer) root.list[index].timer.stop();
+            if (root.list[index].timer != null) root.list[index].timer.stop();
         }
     }
 
@@ -395,7 +400,7 @@ Singleton {
         const index = root.list.findIndex((notif) => notif.notificationId === id);
         if (root.list[index] != null) {
             root.list[index].timerPaused = false;
-            if (root.list[index].timer) root.list[index].timer.restart();
+            if (root.list[index].timer != null) root.list[index].timer.restart();
         }
     }
 
@@ -423,6 +428,9 @@ Singleton {
             const action = notifServerNotif.actions.find((action) => action.identifier === notifIdentifier);
             if (action) {
                 action.invoke();
+            } else {
+                console.warn("[Notifications] Action not found:", notifIdentifier);
+            }
             }
         } 
         else {
@@ -478,32 +486,39 @@ Singleton {
         id: notifFileView
         path: Qt.resolvedUrl(filePath)
         onLoaded: {
-            const fileContents = notifFileView.text()
-            root.list = JSON.parse(fileContents).map((notif) => {
-                return notifComponent.createObject(root, {
-                    "notificationId": notif.notificationId,
-                    "actions": notif.actions || [],
-                    "appIcon": notif.appIcon || "",
-                    "appName": notif.appName || "",
-                    "body": notif.body || "",
-                    "image": notif.image || "",
-                    "summary": notif.summary || "",
-                    "time": notif.time || Date.now(),
-                    "urgency": notif.urgency || "normal",
-                    "progress": notif.progress !== undefined ? notif.progress : -1,
-                    "category": notif.category || "",
-                    "desktopEntry": notif.desktopEntry || "",
+            try {
+                const fileContents = notifFileView.text()
+                root.list = JSON.parse(fileContents).map((notif) => {
+                    return notifComponent.createObject(root, {
+                        "notificationId": notif.notificationId,
+                        "actions": notif.actions || [],
+                        "appIcon": notif.appIcon || "",
+                        "appName": notif.appName || "",
+                        "body": notif.body || "",
+                        "image": notif.image || "",
+                        "summary": notif.summary || "",
+                        "time": notif.time || Date.now(),
+                        "urgency": notif.urgency || "normal",
+                        "progress": notif.progress !== undefined ? notif.progress : -1,
+                        "category": notif.category || "",
+                        "desktopEntry": notif.desktopEntry || "",
+                    });
                 });
-            });
-            // Find largest notificationId
-            let maxId = 0
-            root.list.forEach((notif) => {
-                maxId = Math.max(maxId, notif.notificationId)
-            })
+                let maxId = 0
+                root.list.forEach((notif) => {
+                    maxId = Math.max(maxId, notif.notificationId)
+                })
 
-            console.log("[Notifications] File loaded")
-            root.idOffset = maxId
-            root.initDone()
+                console.log("[Notifications] File loaded")
+                root.idOffset = maxId
+                root.initDone()
+            } catch (e) {
+                console.error("[Notifications] Failed to parse notifications file, resetting:", e)
+                root.list = []
+                notifFileView.setText(stringifyList(root.list))
+                root.idOffset = 0
+                root.initDone()
+            }
         }
         onLoadFailed: (error) => {
             if(error == FileViewError.FileNotFound) {

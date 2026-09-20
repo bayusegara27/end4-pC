@@ -25,6 +25,7 @@ MouseArea {
     // providers' search-and-download UI.
     readonly property bool isOnlineSource: root.source !== "local" && root.source !== "wallpaperengine"
     property string selectedResolution: "1080p"
+    property string selectedColorGroup: ""
     property bool toolbarVisible: showControls || Config.options.wallpaperSelector.showSearchbar
     property bool filterFieldFocused: false
 
@@ -217,13 +218,10 @@ MouseArea {
                 anchors.fill: parent
                 visible: Config.options.wallpaperSelector.showBlurBackground
                 fillMode: Image.PreserveAspectCrop
-                // Loaded only when it is actually drawn, and never larger than
-                // the panel: this is a blurred backdrop, not a wallpaper.
-                source: Config.options.wallpaperSelector.showBlurBackground
-                    ? Config.options.background.wallpaperPath
-                    : ""
-                sourceSize.height: Math.round(height * 1.2)
-                cache: false
+                source: Config.options.wallpaperSelector.showBlurBackground ? Config.options.background.wallpaperPath : ""
+                // Only shown under a radius 48 blur, so a small decode looks the same
+                // and stays small enough for the pixmap cache to keep it between openings
+                sourceSize: Qt.size(480, 480)
                 layer.enabled: true
                 layer.effect: OpacityMask {
                     maskSource: Rectangle {
@@ -294,6 +292,7 @@ MouseArea {
 
                     Toolbar {
                         anchors.centerIn: parent
+                        visible: root.source !== "blapples" && root.source !== "naive"
 
                         Loader {
                             active: root.source === "local"
@@ -340,7 +339,7 @@ MouseArea {
                         }
 
                         Loader {
-                            active: root.isOnlineSource
+                            active: root.isOnlineSource && root.source !== "blapples" && root.source !== "naive"
                             visible: active
                             sourceComponent: RowLayout {
                                 spacing: 4
@@ -368,6 +367,25 @@ MouseArea {
                         }
                     }
 
+                    Loader {
+                        active: root.source === "naive" || root.source === "blapples"
+                        visible: active
+                        anchors.centerIn: parent
+                        sourceComponent: CustomColorSelectionArray {
+                            currentValue: root.selectedColorGroup
+                            options: [
+                                    { value: "",       displayName: Translation.tr("All colors"), color: "transparent", rainbow: true },
+                                { value: "red",    displayName: Translation.tr("Red"),        color: "#E0483E" },
+                                { value: "orange", displayName: Translation.tr("Orange"),     color: "#E08A3E" },
+                                { value: "yellow", displayName: Translation.tr("Yellow"),     color: "#E0C93E" },
+                                { value: "green",  displayName: Translation.tr("Green"),      color: "#6CBF5C" },
+                                { value: "blue",   displayName: Translation.tr("Blue"),       color: "#4C7FE0" },
+                                { value: "purple", displayName: Translation.tr("Purple"),     color: "#8A5CE0" },
+                            ]
+                            onSelected: newValue => root.selectedColorGroup = newValue
+                        }
+                    }
+
                     RowLayout {
                         anchors {
                             right: parent.right
@@ -383,6 +401,8 @@ MouseArea {
                                 { value: "local",     displayName: Translation.tr("Local") },
                                 { value: "wallpaperengine", displayName: Translation.tr("Wallpaper Engine") },
                                 { value: "wallhaven", displayName: Translation.tr("Wallhaven") },
+                                { value: "blapples",  displayName: Translation.tr("Blapples") },
+                                { value: "naive",     displayName: Translation.tr("NA-ive") },
                                 { value: "unsplash",  displayName: Translation.tr("Unsplash") },
                                 { value: "pexels",    displayName: Translation.tr("Pexels") },
                                 { value: "openverse", displayName: Translation.tr("Openverse") },
@@ -467,12 +487,118 @@ MouseArea {
                         OnlineWallpaperGrid {
                             provider: root.source
                             resolution: root.selectedResolution
+                            colorGroup: root.selectedColorGroup
                             onWallpaperSelected: path => root.selectWallpaperPath(path)
                             onUpdateThumbnailsRequested: root.updateThumbnails(true)
                         }
                     }
 
-                    Row {
+                    MouseArea {
+                        id: sortMenuDismissArea
+                        anchors.fill: parent
+                        visible: sortMenuPopup.visible
+                        z: 9
+                        acceptedButtons: Qt.LeftButton | Qt.RightButton
+                        onClicked: sortMenuPopup.visible = false
+                    }
+
+                    Item {
+                        id: sortMenuPopup
+                        visible: false
+                        z: 10
+                        anchors.bottom: extraOptions.top
+                        anchors.horizontalCenter: extraOptions.horizontalCenter
+                        anchors.bottomMargin: 8
+                        implicitWidth: sortMenuContent.implicitWidth + 24
+                        implicitHeight: sortMenuContent.implicitHeight + 20
+
+                        StyledRectangularShadow {
+                            target: sortMenuBackground
+                        }
+
+                        Rectangle {
+                            id: sortMenuBackground
+                            anchors.fill: parent
+                            radius: Appearance.rounding.normal
+                            color: Appearance.m3colors.m3surfaceContainer
+                            border.width: 1
+                            border.color: Appearance.colors.colLayer0Border
+
+                            ColumnLayout {
+                                id: sortMenuContent
+                                anchors.centerIn: parent
+                                spacing: 3
+
+                                StyledText {
+                                    Layout.fillWidth: true
+                                    Layout.leftMargin: 10
+                                    Layout.rightMargin: 10
+                                    Layout.topMargin: 4
+                                    Layout.bottomMargin: 2
+                                    text: Translation.tr("Sort wallpapers")
+                                    font.pixelSize: Appearance.font.pixelSize.smaller
+                                    color: Appearance.colors.colSubtext
+                                }
+
+                                Repeater {
+                                    model: [
+                                        { id: "custom",   name: Translation.tr("Custom (manual order)"), icon: "dashboard_customize" },
+                                        { id: "time",     name: Translation.tr("Date added (newest first)"), icon: "schedule" },
+                                        { id: "time_rev", name: Translation.tr("Date added (oldest first)"), icon: "history" },
+                                        { id: "name",     name: Translation.tr("Name (A to Z)"), icon: "sort_by_alpha" },
+                                        { id: "name_rev", name: Translation.tr("Name (Z to A)"), icon: "sort_by_alpha" },
+                                        { id: "size",     name: Translation.tr("Size (largest first)"), icon: "straighten" },
+                                        { id: "size_rev", name: Translation.tr("Size (smallest first)"), icon: "straighten" },
+                                    ]
+
+                                    delegate: RippleButton {
+                                        id: sortItemBtn
+                                        required property var modelData
+                                        implicitHeight: 32
+                                        implicitWidth: 230
+                                        buttonRadius: Appearance.rounding.small
+                                        toggled: Wallpapers.sortMode === modelData.id
+                                        colBackgroundToggled: Appearance.colors.colSecondaryContainer
+                                        colBackgroundToggledHover: Appearance.colors.colSecondaryContainerHover
+                                        colRippleToggled: Appearance.colors.colSecondaryContainerActive
+                                        onClicked: {
+                                            Wallpapers.setSortMode(modelData.id);
+                                            sortMenuPopup.visible = false;
+                                        }
+
+                                        contentItem: RowLayout {
+                                            anchors.fill: parent
+                                            anchors.leftMargin: 10
+                                            anchors.rightMargin: 10
+                                            spacing: 8
+
+                                            MaterialSymbol {
+                                                text: sortItemBtn.modelData.icon
+                                                iconSize: Appearance.font.pixelSize.normal
+                                                color: sortItemBtn.toggled ? Appearance.colors.colOnSecondaryContainer : Appearance.colors.colOnLayer1
+                                            }
+
+                                            StyledText {
+                                                Layout.fillWidth: true
+                                                text: sortItemBtn.modelData.name
+                                                font.pixelSize: Appearance.font.pixelSize.small
+                                                color: sortItemBtn.toggled ? Appearance.colors.colOnSecondaryContainer : Appearance.colors.colOnLayer1
+                                            }
+
+                                            MaterialSymbol {
+                                                visible: sortItemBtn.toggled
+                                                text: "check"
+                                                iconSize: Appearance.font.pixelSize.small
+                                                color: Appearance.colors.colPrimary
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+
+                    RowLayout {
                         id: extraOptions
                         anchors {
                             bottom: parent.bottom
@@ -536,6 +662,15 @@ MouseArea {
                                     text: "reset_image"
                                     StyledToolTip {
                                         text: Translation.tr("Update thumbnails")
+                                    }
+                                }
+                                IconToolbarButton {
+                                    implicitWidth: height
+                                    toggled: sortMenuPopup.visible
+                                    onClicked: sortMenuPopup.visible = !sortMenuPopup.visible
+                                    text: "sort"
+                                    StyledToolTip {
+                                        text: Translation.tr("Sort wallpapers")
                                     }
                                 }
                                 ToolbarTextField {
@@ -662,6 +797,7 @@ MouseArea {
                 else
                     root.forceActiveFocus()
             } else if (!GlobalStates.wallpaperSelectorOpen) {
+                sortMenuPopup.visible = false;
                 Wallpapers.stopPreview();
             }
         }

@@ -154,6 +154,7 @@ Singleton {
                 property string avatarPicture: ""
                 property string descriptionText: "::distro::"
                 property string displayName: ""
+                property bool onlinePresets: false
 
             }
 
@@ -217,14 +218,22 @@ Singleton {
                 property string style: "default" // default - minimal
                 property real borderSize: 1
                 property string borderColor: "layer0Border"
+                property list<string> collapsedSections: []
             }
 
             property JsonObject background: JsonObject {
                 property string lockWall: ""
                 property bool widgetsLocked: false
                 property bool showGrid: true
+                property bool showBlur: false
+                property real blurRadius: 32
+                property string splitRatio: "100" // 25 50 100
+                property string splitSide: "left"
                 property bool showSnapLines: true
                 property JsonObject widgets: JsonObject {
+                    property bool blurWidgets: false
+                    property real blurRadius: 32
+
                     property JsonObject discordVoice: JsonObject {
                         property bool enable: true
                         property bool showOnlyWhenLocked: false
@@ -240,6 +249,7 @@ Singleton {
                         property string placementStrategy: "leastBusy" // "free", "leastBusy", "mostBusy"
                         property real x: 100
                         property real y: 100
+                        property real z: 0
                         property string style: "cookie"        // Options: "cookie", "digital"
                         property string color: ""
                         property string styleLocked: "cookie"  // Options: "cookie", "digital"
@@ -284,7 +294,9 @@ Singleton {
                         property string placementStrategy: "free" // "free", "leastBusy", "mostBusy"
                         property real x: 400
                         property real y: 100
+                        property real z: 0
                         property string sizeMode: "1x3"
+                        property bool expanded: false
                     }
 
                     property JsonObject calendar: JsonObject {
@@ -292,6 +304,7 @@ Singleton {
                         property string placementStrategy: "free" // "free", "leastBusy", "mostBusy"
                         property real x: 400
                         property real y: 100
+                        property real z: 0
                         property string sizeMode: "2x2"
                     }
                     property JsonObject worldClock: JsonObject {
@@ -300,7 +313,9 @@ Singleton {
                         property string placementStrategy: "free"
                         property real x: 400
                         property real y: 100
-                        property string sizeMode: "2x2" 
+                        property real z: 0
+                        property string sizeMode: "2x2"
+                        property int clockCount: 4 
                     }
 
                     property JsonObject notes: JsonObject {
@@ -308,6 +323,15 @@ Singleton {
                         property string placementStrategy: "free"
                         property real x: 400
                         property real y: 100
+                        property real z: 0
+                    }
+
+                    property JsonObject todo: JsonObject {
+                        property bool enable: false
+                        property string placementStrategy: "free"
+                        property real x: 400
+                        property real y: 100
+                        property real z: 0
                     }
 
                     property JsonObject userCard: JsonObject {
@@ -315,6 +339,8 @@ Singleton {
                         property string placementStrategy: "free"
                         property real x: 400
                         property real y: 100
+                        property real z: 0
+                        property string sizeMode: "1x2" 
                     }
 
                     property JsonObject images: JsonObject {
@@ -322,6 +348,7 @@ Singleton {
                         property string placementStrategy: "free"
                         property real x: 400
                         property real y: 100
+                        property real z: 0
                     }
 
                     property JsonObject visualizer: JsonObject {
@@ -329,6 +356,12 @@ Singleton {
                         property string placementStrategy: "free"
                         property real x: 0
                         property real y: 0
+                        property real z: -1000
+                        property string style: "bars" // "bars", "mirror", "aurora", "ring", "dots"
+                        property string colorSource: "theme" // "theme", "cover"
+                        property real sensitivity: 1
+                        property int height: 260 // mirror, aurora and dots
+                        property int ringSize: 380
                     }
 
                     property JsonObject customImage: JsonObject {
@@ -336,9 +369,24 @@ Singleton {
                         property string placementStrategy: "free"
                         property real x: 400
                         property real y: 100
+                        property real z: 0
                         property string path: ""
                         property string shape: "Cookie4Sided"
                         property real size: 200
+                    }
+
+                    property JsonObject sticker: JsonObject {
+                        property bool enable: false
+                        property list<var> items: [] // if someone sees this and wants to add more stickers, make a PR too lazy 
+                        property string placementStrategy: "free"
+                        property real x: 400
+                        property real y: 100
+                        property real z: 0
+                        property string path: ""
+                        property real size: 200
+                        property real rotation: 0
+                        property string outlineColor: "#ffffff" //dont work =(
+                        property real outlineWidth: 8
                     }
 
                     property JsonObject resources: JsonObject {
@@ -346,6 +394,16 @@ Singleton {
                         property string placementStrategy: "free"
                         property real x: 400
                         property real y: 100
+                        property real z: 0
+                        property bool vertical: false
+                    }
+
+                    property JsonObject timers: JsonObject {
+                        property bool enable: false
+                        property string placementStrategy: "free"
+                        property real x: 400
+                        property real y: 100
+                        property real z: 0
                         property bool vertical: false
                     }
 
@@ -358,7 +416,22 @@ Singleton {
                         property string placementStrategy: "free" // "free", "leastBusy", "mostBusy"
                         property real x: 800
                         property real y: 500
+                        property real z: 0
                         property string sizeMode: "1x3" 
+                    }
+
+                    property JsonObject customText: JsonObject {
+                        property bool enable: false
+                        property string placementStrategy: "free"
+                        property real x: 400
+                        property real y: 300
+                        property real z: 0
+                        property string content: "Hello world"
+                        property string fontFamily: "Caveat"
+                        property int fontSize: 72
+                        property string color: "" // "" = automatic, otherwise an Appearance color name
+                        property string alignment: "center" // "left", "center", "right"
+                        property bool shadow: true
                     }
                 }
                 property list<string> screenList: []
@@ -400,6 +473,7 @@ Singleton {
                 property real frameThickness: 4
                 property string frameColor: "black"
                 property bool followFrameColor: false
+                property bool centerOnlyReserveFrame: false
                 property bool bottom: false // Instead of top
                 property int cornerStyle: 0 // 0: Hug | 1: Float | 2: Plain rectangle
                 property string groupColor: "layer1"
@@ -420,6 +494,13 @@ Singleton {
                     property int memoryWarningThreshold: 95
                     property int swapWarningThreshold: 85
                     property int cpuWarningThreshold: 90
+                }
+
+                property JsonObject dynamicIsland: JsonObject {
+                    property string visualizerStyle: "dots" // "dots", "wave", "none"
+                    property bool showMediaControls: false
+                    property string leftWidget: "none"
+                    property string rightWidget: "none"
                 }
                 property JsonObject divider: JsonObject {
                     property string style: "rect" // rect - dot - space
@@ -468,6 +549,7 @@ Singleton {
                     }
                 }
                 property JsonObject tooltips: JsonObject {
+                    property bool enable: true
                     property bool clickToShow: false
                 }
                 property JsonObject media: JsonObject {
@@ -476,6 +558,7 @@ Singleton {
                     property bool onlyTitle: false
                     property int maxWidth: 280
                     property int minWidth: 100
+                    property bool showLyrics: false
                 }
             }
 
@@ -699,6 +782,7 @@ Singleton {
 
             property JsonObject sidebar: JsonObject {
                 property bool banner: true
+                property bool bottomGroup: true
                 property bool mediaPlayer: false
                 property string bannerImage: ""
                 property bool keepRightSidebarLoaded: true
@@ -709,6 +793,10 @@ Singleton {
                 property JsonObject media: JsonObject {
                     property bool enable: true
                     property bool artColors: false
+                    property string artShape: "Oval"
+                    property bool showLyrics: true
+                    property bool shapeArt: false
+                    property bool blurredBackground: false
                 }
                 
                 property JsonObject ai: JsonObject {
@@ -760,7 +848,7 @@ Singleton {
             }
 
             property JsonObject custom: JsonObject {
-                property string distroIcon: "spark"
+                property string distroIcon: "google-gemini-symbolic"
                 property bool colorizeIcon: true
             }
 
@@ -811,6 +899,7 @@ Singleton {
                 property int columns: 4
                 property bool closeAfterSelection: true
                 property int changeInterval: 0 
+                property string sortMode: "time"
             }
 
             property JsonObject windows: JsonObject {
