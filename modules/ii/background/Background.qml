@@ -345,7 +345,7 @@ Variants {
                     FastBlur {
                         id: blurLayer
                         anchors.fill: parent
-                        source: bgRoot.wallpaperAnimation ===  || bgRoot.transitionProgress >= 1.0 ? wallpaper : transitionEffect
+                        source: bgRoot.wallpaperAnimation === "" || bgRoot.transitionProgress >= 1.0 ? wallpaper : transitionEffect
                         radius: Config.options.background.blurRadius
 
                         layer.enabled: !bgRoot.blurFullScreen
@@ -355,8 +355,8 @@ Variants {
                                 height: blurLayer.height
                                 gradient: Gradient {
                                     orientation: Gradient.Horizontal
-                                    GradientStop { position: blurRoot.alignRight ? 1 - (blurRoot.coreWidth / blurRoot.width) : Math.max(0, (blurRoot.coreWidth - blurRoot.fadeWidth) / blurRoot.width); color: blurRoot.alignRight ? transparent : white }
-                                    GradientStop { position: blurRoot.alignRight ? Math.min(1, 1 - (blurRoot.coreWidth - blurRoot.fadeWidth) / blurRoot.width) : Math.min(1, blurRoot.coreWidth / blurRoot.width); color: blurRoot.alignRight ? white : transparent }
+                                    GradientStop { position: blurRoot.alignRight ? 1 - (blurRoot.coreWidth / blurRoot.width) : Math.max(0, (blurRoot.coreWidth - blurRoot.fadeWidth) / blurRoot.width); color: blurRoot.alignRight ? "transparent" : "white" }
+                                    GradientStop { position: blurRoot.alignRight ? Math.min(1, 1 - (blurRoot.coreWidth - blurRoot.fadeWidth) / blurRoot.width) : Math.min(1, blurRoot.coreWidth / blurRoot.width); color: blurRoot.alignRight ? "white" : "transparent" }
                                 }
                             }
                         }
@@ -412,7 +412,6 @@ Variants {
                     screen: bgRoot.screen
                     wallpaperItem: wallpaper
                     wallpaperSafetyTriggered: bgRoot.wallpaperSafetyTriggered
-                }
                 }
             }
 
