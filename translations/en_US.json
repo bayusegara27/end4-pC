@@ -280,6 +280,7 @@
   "Unfinished": "Unfinished",
   "Random: Konachan": "Random: Konachan",
   "Connected": "Connected",
+  "Disconnected": "Disconnected",
   "Wallpaper safety enforced": "Wallpaper safety enforced",
   "Invalid arguments. Must provide `key` and `value`.": "Invalid arguments. Must provide `key` and `value`.",
   "24h": "24h",

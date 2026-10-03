@@ -342,6 +342,7 @@
   "Unfinished": "Belum selesai",
   "Random: Konachan": "Acak: Konachan",
   "Connected": "Terhubung",
+  "Disconnected": "Terputus",
   "Wallpaper safety enforced": "Keamanan wallpaper diberlakukan",
   "Invalid arguments. Must provide `key` and `value`.": "Argumen tidak valid. Harus menyediakan `key` dan `value`.",
   "24h": "24j",

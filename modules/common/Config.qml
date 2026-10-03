@@ -450,6 +450,33 @@ Singleton {
                         property string alignment: "center" // "left", "center", "right"
                         property bool shadow: true
                     }
+
+                    property JsonObject personalTelemetry: JsonObject {
+                        property bool enable: false
+                        property string placementStrategy: "free"
+                        property real x: 488
+                        property real y: 36
+                        property real z: 50
+                        property string sizeMode: "2x2"
+                    }
+
+                    property JsonObject devices: JsonObject {
+                        property bool enable: false
+                        property string placementStrategy: "free"
+                        property real x: 488
+                        property real y: 332
+                        property real z: 51
+                        property string sizeMode: "2x2"
+                    }
+
+                    property JsonObject systemNetwork: JsonObject {
+                        property bool enable: false
+                        property string placementStrategy: "free"
+                        property real x: 488
+                        property real y: 548
+                        property real z: 52
+                        property string sizeMode: "2x2"
+                    }
                 }
                 property list<string> screenList: []
                 // Who owns the desktop background: "shell" (quickshell draws it

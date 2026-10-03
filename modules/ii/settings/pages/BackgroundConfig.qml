@@ -1379,7 +1379,21 @@ ContentPage {
                             name: Translation.tr("Sticker"),
                             enabled: Config.options.background.widgets.sticker.enable
                         },
-                        
+                        {
+                            icon: "vital_signs",
+                            name: Translation.tr("Personal Telemetry"),
+                            enabled: Config.options.background.widgets.personalTelemetry.enable
+                        },
+                        {
+                            icon: "devices_other",
+                            name: Translation.tr("Devices"),
+                            enabled: Config.options.background.widgets.devices.enable
+                        },
+                        {
+                            icon: "monitoring",
+                            name: Translation.tr("System / Network"),
+                            enabled: Config.options.background.widgets.systemNetwork.enable
+                        },
                     ]
                     delegate: Rectangle {
                         Layout.fillWidth: true
@@ -1430,6 +1444,12 @@ ContentPage {
                                             Config.options.background.widgets.timers.enable = checked
                                         else if (modelData.icon === "sticker")
                                             Config.options.background.widgets.sticker.enable = checked
+                                        else if (modelData.icon === "vital_signs")
+                                            Config.options.background.widgets.personalTelemetry.enable = checked
+                                        else if (modelData.icon === "devices_other")
+                                            Config.options.background.widgets.devices.enable = checked
+                                        else if (modelData.icon === "monitoring")
+                                            Config.options.background.widgets.systemNetwork.enable = checked
                                     }
                                 }
                             }

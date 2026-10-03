@@ -26,6 +26,9 @@ Item {
         { key: "timers",      icon: "timer",              name: Translation.tr("Timers") },
         { key: "todo",        icon: "add_task",           name: Translation.tr("To-Do") },
         { key: "sticker",     icon: "sticker",            name: Translation.tr("Sticker") },
+        { key: "personalTelemetry", icon: "vital_signs", name: Translation.tr("Personal Telemetry") },
+        { key: "devices",           icon: "devices_other", name: Translation.tr("Devices") },
+        { key: "systemNetwork",     icon: "monitoring",  name: Translation.tr("System / Network") },
     ]
 
     Rectangle {

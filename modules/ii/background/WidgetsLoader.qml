@@ -21,6 +21,9 @@ import qs.modules.ii.background.widgets.notes
 import qs.modules.ii.background.widgets.todo
 import qs.modules.ii.background.widgets.timers
 import qs.modules.ii.background.widgets.customtext
+import qs.modules.ii.background.widgets.personaltelemetry
+import qs.modules.ii.background.widgets.devices
+import qs.modules.ii.background.widgets.systemnetwork
 
 Item {
     id: root
@@ -50,6 +53,9 @@ Item {
             { key: "timers" },
             { key: "customText" },
             { key: "discordVoice" },
+            { key: "personalTelemetry" },
+            { key: "devices" },
+            { key: "systemNetwork" },
         ]
 
         delegate: FadeLoader {
@@ -82,6 +88,9 @@ Item {
                     case "timers":      return timersComp
                     case "customText":  return customTextComp
                     case "discordVoice": return discordVoiceComp
+                    case "personalTelemetry": return personalTelemetryComp
+                    case "devices": return devicesComp
+                    case "systemNetwork": return systemNetworkComp
                 }
                 return null
             }
@@ -273,6 +282,39 @@ Item {
     Component {
         id: discordVoiceComp
         DiscordVoiceWidget {
+            screenWidth: root.screen.width
+            screenHeight: root.screen.height
+            scaledScreenWidth: root.screen.width
+            scaledScreenHeight: root.screen.height
+            wallpaperScale: 1
+            wallpaperItem: root.wallpaperItem
+        }
+    }
+    Component {
+        id: personalTelemetryComp
+        PersonalTelemetryWidget {
+            screenWidth: root.screen.width
+            screenHeight: root.screen.height
+            scaledScreenWidth: root.screen.width
+            scaledScreenHeight: root.screen.height
+            wallpaperScale: 1
+            wallpaperItem: root.wallpaperItem
+        }
+    }
+    Component {
+        id: devicesComp
+        DevicesWidget {
+            screenWidth: root.screen.width
+            screenHeight: root.screen.height
+            scaledScreenWidth: root.screen.width
+            scaledScreenHeight: root.screen.height
+            wallpaperScale: 1
+            wallpaperItem: root.wallpaperItem
+        }
+    }
+    Component {
+        id: systemNetworkComp
+        SystemNetworkWidget {
             screenWidth: root.screen.width
             screenHeight: root.screen.height
             scaledScreenWidth: root.screen.width
