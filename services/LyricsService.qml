@@ -34,23 +34,76 @@ Singleton {
         return result
     }
 
-    Timer {
-        id: syncTimer
-        interval: 50
-        repeat: true
-        running: root.status === "ok" && root.lyricsLines.length > 0
-        onTriggered: {
-            const pos = root.activePlayer?.position ?? 0
-            let idx = -1
-            for (let i = 0; i < root.lyricsLines.length; i++) {
-                if (root.lyricsLines[i].time <= pos) idx = i
-                else break
-            }
-            if (idx !== root.activeIndex) {
-                root.activeIndex = idx
-                root.slots = root.buildSlots(idx)
+    readonly property bool playing: root.activePlayer?.isPlaying ?? false
+    readonly property bool synced: root.status === "ok" && root.lyricsLines.length > 0
+    readonly property real leadSeconds: 0.15
+
+    property real basePosition: 0
+    property real baseTime: Date.now()
+
+    function currentPosition() {
+        return root.playing ? root.basePosition + (Date.now() - root.baseTime) / 1000 : root.basePosition
+    }
+
+    function resync() {
+        if (!root.activePlayer) return
+        root.activePlayer.positionChanged()
+        readPositionTimer.restart()
+    }
+
+    function indexAt(pos) {
+        const lines = root.lyricsLines
+        let low = 0
+        let high = lines.length - 1
+        let result = -1
+        while (low <= high) {
+            const mid = (low + high) >> 1
+            if (lines[mid].time <= pos) {
+                result = mid
+                low = mid + 1
+            } else {
+                high = mid - 1
             }
         }
+        return result
+    }
+
+    function update() {
+        boundaryTimer.stop()
+        if (!root.synced) return
+        const idx = root.indexAt(root.currentPosition() + root.leadSeconds)
+        if (idx !== root.activeIndex) {
+            root.activeIndex = idx
+            root.slots = root.buildSlots(idx)
+        }
+        const next = root.lyricsLines[idx + 1]
+        if (!root.playing || !next) return
+        const delay = (next.time - root.leadSeconds - root.currentPosition()) * 1000
+        boundaryTimer.interval = Math.max(1, Math.ceil(delay))
+        boundaryTimer.start()
+    }
+
+    Timer {
+        id: readPositionTimer
+        interval: 80
+        onTriggered: {
+            root.basePosition = root.activePlayer?.position ?? 0
+            root.baseTime = Date.now()
+            root.update()
+        }
+    }
+
+    Timer {
+        id: boundaryTimer
+        onTriggered: root.update()
+    }
+
+    Timer {
+        id: driftTimer
+        interval: 4000
+        repeat: true
+        running: root.synced && root.playing
+        onTriggered: root.resync()
     }
 
     Process {
@@ -90,6 +143,7 @@ Singleton {
                 root.activeIndex = -1
                 console.log("LYRICS DEBUG: ALL GOOD, status = ok")
                 root.status = "ok"
+                root.resync()
             }
         }
     }
@@ -102,6 +156,7 @@ Singleton {
 
     function restartLyrics() {
         lyricsProc.running = false
+        boundaryTimer.stop()
         root.lyricsLines = []
         root.activeIndex = -1
         root.slots = ["", "", "", "", "", "", ""]
@@ -121,18 +176,10 @@ Singleton {
         procRestartTimer.restart()
     }
 
-    property string lastTitle: ""
-    Timer {
-        interval: 500
-        running: true
-        repeat: true
-        onTriggered: {
-            let currentTitle = root.activePlayer ? root.activePlayer.trackTitle : ""
-            if (currentTitle !== root.lastTitle && currentTitle !== "") {
-                root.lastTitle = currentTitle
-                root.restartLyrics()
-            }
-        }
+    Connections {
+        target: root.activePlayer
+        function onTrackTitleChanged() { root.restartLyrics() }
+        function onPlaybackStateChanged() { root.resync() }
     }
 
     Component.onCompleted: root.restartLyrics()

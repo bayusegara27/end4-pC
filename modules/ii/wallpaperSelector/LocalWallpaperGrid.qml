@@ -54,6 +54,7 @@ Item {
     property var draggedItemData: null
 
     function startDrag(fromIdx, data, pos) {
+        grid.currentIndex = fromIdx;
         dragFromIndex = fromIdx;
         dropTargetIndex = fromIdx;
         draggedItemData = data;
@@ -145,16 +146,17 @@ Item {
     // ─── Dismiss overlay for context menu ───
     MouseArea {
         anchors.fill: parent
-        visible: contextMenu.visible
+        visible: contextMenu.open
         z: 105
+        hoverEnabled: true
         acceptedButtons: Qt.LeftButton | Qt.RightButton
-        onClicked: contextMenu.visible = false
+        onClicked: contextMenu.open = false
     }
 
     // ─── Context menu ───
-    Item {
+    BouncyPopup {
         id: contextMenu
-        visible: false
+        transformOrigin: Item.TopLeft
         z: 110
 
         property string targetPath: ""
@@ -195,7 +197,7 @@ Item {
                         colBackground: Appearance.colors.colSecondaryContainer
                         onClicked: {
                             Wallpapers.moveToTop(contextMenu.targetIndex);
-                            contextMenu.visible = false;
+                            contextMenu.open = false;
                         }
                         contentItem: MaterialSymbol {
                             anchors.centerIn: parent
@@ -212,7 +214,7 @@ Item {
                         colBackground: Appearance.colors.colSecondaryContainer
                         onClicked: {
                             Wallpapers.moveWallpaper(contextMenu.targetIndex, Math.max(0, contextMenu.targetIndex - 1));
-                            contextMenu.visible = false;
+                            contextMenu.open = false;
                         }
                         contentItem: MaterialSymbol {
                             anchors.centerIn: parent
@@ -229,7 +231,7 @@ Item {
                         colBackground: Appearance.colors.colSecondaryContainer
                         onClicked: {
                             Wallpapers.moveWallpaper(contextMenu.targetIndex, Math.min(Wallpapers.wallpaperModel.count - 1, contextMenu.targetIndex + 1));
-                            contextMenu.visible = false;
+                            contextMenu.open = false;
                         }
                         contentItem: MaterialSymbol {
                             anchors.centerIn: parent
@@ -246,7 +248,7 @@ Item {
                         colBackground: Appearance.colors.colSecondaryContainer
                         onClicked: {
                             Wallpapers.moveToBottom(contextMenu.targetIndex);
-                            contextMenu.visible = false;
+                            contextMenu.open = false;
                         }
                         contentItem: MaterialSymbol {
                             anchors.centerIn: parent
@@ -267,7 +269,7 @@ Item {
                         buttonRadius: height / 2
                         colBackground: Appearance.colors.colErrorContainer
                         onClicked: {
-                            contextMenu.visible = false;
+                            contextMenu.open = false;
                             deleteProc.deleteFile(contextMenu.targetPath);
                         }
                         contentItem: MaterialSymbol {
@@ -283,7 +285,7 @@ Item {
                         implicitWidth: 32; implicitHeight: 32
                         buttonRadius: height / 2
                         colBackground: Appearance.colors.colLayer2
-                        onClicked: contextMenu.visible = false
+                        onClicked: contextMenu.open = false
                         contentItem: MaterialSymbol {
                             anchors.centerIn: parent
                             text: "close"
@@ -350,8 +352,18 @@ Item {
     }
 
     // ─── Grid ───
+    Timer {
+        id: introTimer
+        interval: 1200
+        onTriggered: grid.introDone = true
+    }
+
     GridView {
         id: grid
+        property bool introDone: false
+        property int introCounter: 0
+        onCountChanged: if (count > 0 && !introDone && !introTimer.running) introTimer.start()
+        Component.onCompleted: if (count > 0) introTimer.start()
         anchors.fill: parent
         visible: Wallpapers.wallpaperModel.count > 0
 
@@ -391,6 +403,16 @@ Item {
         model: Wallpapers.wallpaperModel
         onModelChanged: { currentIndex = 0; Wallpapers.stopPreview(); }
 
+        Connections {
+            target: Wallpapers
+            function onResultsUpdated() {
+                if (Wallpapers.searchQuery.trim().length > 0) {
+                    grid.currentIndex = 0;
+                    Wallpapers.stopPreview();
+                }
+            }
+        }
+
         delegate: Item {
             id: delegateCell
             required property var modelData
@@ -399,6 +421,10 @@ Item {
             height: grid.cellHeight
 
             readonly property bool isGhost: root.isDragging && root.dragFromIndex === index
+
+            Component.onDestruction: {
+                if (root.isDragging && root.dragFromIndex === index) root.cancelDrag();
+            }
             readonly property bool isDropTarget: root.isDragging && root.dropTargetIndex === index && root.dragFromIndex !== index
 
             opacity: isGhost ? 0.3 : 1.0
@@ -408,7 +434,19 @@ Item {
 
             WallpaperDirectoryItem {
                 id: wallpaperItem
+                property int introOrder: -1
                 anchors.fill: parent
+                opacity: grid.introDone ? 1 : 0
+                scale: grid.introDone ? 1 : 0.85
+                transform: Translate {
+                    id: introShift
+                    y: grid.introDone ? 0 : 28
+                }
+                Component.onCompleted: {
+                    if (grid.introDone) return;
+                    introOrder = grid.introCounter++;
+                    introAnim.start();
+                }
                 fileModelData: delegateCell.modelData
                 colBackground: (delegateCell.index === grid.currentIndex || cellMouseArea.containsMouse)
                     ? Appearance.colors.colPrimary
@@ -420,6 +458,38 @@ Item {
                     : (delegateCell.modelData.filePath === Config.options.background.wallpaperPath)
                         ? Appearance.colors.colOnSecondaryContainer
                         : Appearance.colors.colOnLayer0
+            }
+
+            SequentialAnimation {
+                id: introAnim
+                PauseAnimation {
+                    duration: Math.max(0, Math.min(wallpaperItem.introOrder, 20)) * 16
+                }
+                ParallelAnimation {
+                    NumberAnimation {
+                        target: wallpaperItem
+                        property: "opacity"
+                        to: 1
+                        duration: 200
+                        easing.type: Easing.OutQuad
+                    }
+                    SpringAnimation {
+                        target: wallpaperItem
+                        property: "scale"
+                        to: 1
+                        spring: 3.5
+                        damping: 0.35
+                        epsilon: 0.002
+                    }
+                    SpringAnimation {
+                        target: introShift
+                        property: "y"
+                        to: 0
+                        spring: 3.5
+                        damping: 0.35
+                        epsilon: 0.1
+                    }
+                }
             }
 
             // Drop target indicator
@@ -479,7 +549,7 @@ Item {
                         contextMenu.targetY = pos.y;
                         contextMenu.targetPath = delegateCell.modelData.filePath;
                         contextMenu.targetIndex = delegateCell.index;
-                        contextMenu.visible = true;
+                        contextMenu.open = true;
                         return;
                     }
                     if (root.isDragging) {

@@ -1,3 +1,4 @@
+import qs.services
 import qs.modules.common
 import qs.modules.common.functions
 import Qt5Compat.GraphicalEffects
@@ -24,8 +25,10 @@ Item {
         if (!root.appIcon || root.appIcon === "") return "";
         // If it starts with file:// or absolute path
         if (root.appIcon.startsWith("file://") || root.appIcon.startsWith("/")) return root.appIcon;
-        // Check if quickshell finds it in system theme
-        const p = Quickshell.iconPath(root.appIcon);
+        // Check if system appearance or quickshell finds it in system theme
+        const p = (typeof SystemAppearance !== "undefined" && SystemAppearance.iconPath) ? 
+            SystemAppearance.iconPath(root.appIcon, "image-missing") : 
+            Quickshell.iconPath(root.appIcon, "image-missing");
         if (p && p !== "" && !p.includes("image-missing")) return p;
         return "";
     }
@@ -69,6 +72,17 @@ Item {
                     radius: width / 2
                 }
             }
+        }
+
+        // Optional badge if notification has both custom avatar and an application icon
+        IconImage {
+            visible: root.hasValidImage && root.hasValidIcon
+            anchors.bottom: parent.bottom
+            anchors.right: parent.right
+            implicitWidth: 14
+            implicitHeight: 14
+            asynchronous: true
+            source: root.resolvedIconPath
         }
 
         // Case 2: Display System IconImage if resolved successfully

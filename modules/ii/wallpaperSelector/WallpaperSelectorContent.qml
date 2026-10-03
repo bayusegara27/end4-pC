@@ -28,6 +28,7 @@ MouseArea {
     property string selectedColorGroup: ""
     property bool toolbarVisible: showControls || Config.options.wallpaperSelector.showSearchbar
     property bool filterFieldFocused: false
+    property Item activeFilterField: null
 
     property var quickDirs: [
         { icon: "home",       name: "Home   ",       path: `${Directories.home}`,                alwaysVisible: Config.options.wallpaperSelector.showHomePath },
@@ -63,6 +64,19 @@ MouseArea {
             }
         }
     }
+
+    // Wallhaven 9-color filter groups — surfaced in the header array like blapples' picker.
+    readonly property var wallhavenColorGroups: [
+        { hex: "cc0000", name: Translation.tr("Red"),       q: "660000,990000,cc0000,cc3333" },
+        { hex: "ff6600", name: Translation.tr("Orange"),    q: "ffcc33,ff9900,ff6600" },
+        { hex: "cccc33", name: Translation.tr("Yellow"),    q: "666600,999900,cccc33,ffff00" },
+        { hex: "669900", name: Translation.tr("Green"),     q: "77cc33,669900,336600" },
+        { hex: "66cccc", name: Translation.tr("Cyan"),      q: "66cccc,0099cc" },
+        { hex: "0066cc", name: Translation.tr("Blue"),      q: "0066cc,0099cc,333399" },
+        { hex: "663399", name: Translation.tr("Purple"),    q: "ea4c88,993399,663399,333399" },
+        { hex: "996633", name: Translation.tr("Brown"),     q: "cc6633,996633,663300" },
+        { hex: "999999", name: Translation.tr("Grayscale"), q: "000000,999999,cccccc,ffffff,424153" }
+    ]
 
     // The grid asks for thumbnails at a size derived from its cell size, so the
     // needed size changes with the window and the column count. `switchToDownloads`
@@ -161,20 +175,21 @@ MouseArea {
             event.accepted = true;
         } else if (event.key === Qt.Key_Backspace) {
             if (!root.filterFieldFocused) {
-                filterField.forceActiveFocus();
+                root.activeFilterField?.forceActiveFocus();
             }
             event.accepted = true;
         } else if (event.modifiers & Qt.ControlModifier && event.key === Qt.Key_L) {
             addressBar.focusBreadcrumb();
             event.accepted = true;
         } else if (event.key === Qt.Key_Slash) {
-            filterField.forceActiveFocus();
+            root.activeFilterField?.forceActiveFocus();
             event.accepted = true;
         } else {
-            if (event.text.length > 0 && !root.filterFieldFocused) {
-                filterField.text += event.text;
-                filterField.cursorPosition = filterField.text.length;
-                filterField.forceActiveFocus();
+            const field = root.activeFilterField;
+            if (field && event.text.length > 0 && !root.filterFieldFocused) {
+                field.text += event.text;
+                field.cursorPosition = field.text.length;
+                field.forceActiveFocus();
             }
             event.accepted = true;
         }
@@ -196,7 +211,7 @@ MouseArea {
         focus: true
         border.width: 1
         border.color: Appearance.colors.colLayer0Border
-        color: Appearance.colors.colLayer0
+        color: ColorSchemes.current !== "" ? Qt.rgba(Appearance.colors.colLayer0.r, Appearance.colors.colLayer0.g, Appearance.colors.colLayer0.b, 1) : Appearance.colors.colLayer0
         radius: Appearance.rounding.screenRounding + 5
 
         implicitWidth: gridColumnLayout.implicitWidth
@@ -209,7 +224,7 @@ MouseArea {
             Rectangle {
                 anchors.fill: parent
                 radius: wallpaperGridBackground.radius - 4
-                color: Appearance.colors.colLayer2
+                color: ColorSchemes.current !== "" ? wallpaperGridBackground.color : Appearance.colors.colLayer2
                 visible: !Config.options.wallpaperSelector.showBlurBackground
             }
 
@@ -292,7 +307,7 @@ MouseArea {
 
                     Toolbar {
                         anchors.centerIn: parent
-                        visible: root.source !== "blapples" && root.source !== "naive"
+                        visible: root.source !== "blapples" && root.source !== "naive" && root.source !== "wallhaven"
 
                         Loader {
                             active: root.source === "local"
@@ -339,7 +354,7 @@ MouseArea {
                         }
 
                         Loader {
-                            active: root.isOnlineSource && root.source !== "blapples" && root.source !== "naive"
+                            active: root.isOnlineSource && root.source !== "blapples" && root.source !== "naive" && root.source !== "wallhaven"
                             visible: active
                             sourceComponent: RowLayout {
                                 spacing: 4
@@ -368,21 +383,33 @@ MouseArea {
                     }
 
                     Loader {
-                        active: root.source === "naive" || root.source === "blapples"
+                        active: root.source === "naive" || root.source === "blapples" || root.source === "wallhaven"
                         visible: active
                         anchors.centerIn: parent
                         sourceComponent: CustomColorSelectionArray {
-                            currentValue: root.selectedColorGroup
-                            options: [
+                            currentValue: root.source === "wallhaven" ? WallhavenSearch.colors : root.selectedColorGroup
+                            options: root.source === "wallhaven"
+                                ? [{ value: "", displayName: Translation.tr("All colors"), color: "transparent", rainbow: true }]
+                                    .concat(root.wallhavenColorGroups.map(g => ({ value: g.q, displayName: g.name, color: "#" + g.hex })))
+                                : [
                                     { value: "",       displayName: Translation.tr("All colors"), color: "transparent", rainbow: true },
-                                { value: "red",    displayName: Translation.tr("Red"),        color: "#E0483E" },
-                                { value: "orange", displayName: Translation.tr("Orange"),     color: "#E08A3E" },
-                                { value: "yellow", displayName: Translation.tr("Yellow"),     color: "#E0C93E" },
-                                { value: "green",  displayName: Translation.tr("Green"),      color: "#6CBF5C" },
-                                { value: "blue",   displayName: Translation.tr("Blue"),       color: "#4C7FE0" },
-                                { value: "purple", displayName: Translation.tr("Purple"),     color: "#8A5CE0" },
-                            ]
-                            onSelected: newValue => root.selectedColorGroup = newValue
+                                    { value: "red",    displayName: Translation.tr("Red"),        color: "#E0483E" },
+                                    { value: "orange", displayName: Translation.tr("Orange"),     color: "#E08A3E" },
+                                    { value: "yellow", displayName: Translation.tr("Yellow"),     color: "#E0C93E" },
+                                    { value: "green",  displayName: Translation.tr("Green"),      color: "#6CBF5C" },
+                                    { value: "blue",   displayName: Translation.tr("Blue"),       color: "#4C7FE0" },
+                                    { value: "purple", displayName: Translation.tr("Purple"),     color: "#8A5CE0" },
+                                ]
+                            onSelected: newValue => {
+                                if (root.source === "wallhaven") {
+                                    // setColor toggles: picking the active color clears it.
+                                    // Skip only the no-op "All colors" while already clear.
+                                    if (newValue === "" && WallhavenSearch.colors === "") return
+                                    WallhavenSearch.setColor(newValue)
+                                } else {
+                                    root.selectedColorGroup = newValue
+                                }
+                            }
                         }
                     }
 
@@ -461,6 +488,7 @@ MouseArea {
                         anchors.fill: parent
                         sourceComponent: root.source === "local" ? localGridComponent
                             : root.source === "wallpaperengine" ? wpeGridComponent
+                            : root.source === "wallhaven" ? wallhavenGridComponent
                             : onlineGridComponent
                     }
 
@@ -483,6 +511,19 @@ MouseArea {
                     }
 
                     Component {
+                        id: wallhavenGridComponent
+                        WallhavenSearchGrid {
+                            columns: root.columns
+                            previewCellAspectRatio: root.previewCellAspectRatio
+                            useDarkMode: root.useDarkMode
+                            onWallpaperApplied: {
+                                if (Config.options.wallpaperSelector.closeAfterSelection)
+                                    GlobalStates.wallpaperSelectorOpen = false;
+                            }
+                        }
+                    }
+
+                    Component {
                         id: onlineGridComponent
                         OnlineWallpaperGrid {
                             provider: root.source
@@ -496,15 +537,16 @@ MouseArea {
                     MouseArea {
                         id: sortMenuDismissArea
                         anchors.fill: parent
-                        visible: sortMenuPopup.visible
+                        visible: sortMenuPopup.open
                         z: 9
+                        hoverEnabled: true
                         acceptedButtons: Qt.LeftButton | Qt.RightButton
-                        onClicked: sortMenuPopup.visible = false
+                        onClicked: sortMenuPopup.open = false
                     }
 
-                    Item {
+                    BouncyPopup {
                         id: sortMenuPopup
-                        visible: false
+                        transformOrigin: Item.Bottom
                         z: 10
                         anchors.bottom: extraOptions.top
                         anchors.horizontalCenter: extraOptions.horizontalCenter
@@ -563,7 +605,7 @@ MouseArea {
                                         colRippleToggled: Appearance.colors.colSecondaryContainerActive
                                         onClicked: {
                                             Wallpapers.setSortMode(modelData.id);
-                                            sortMenuPopup.visible = false;
+                                            sortMenuPopup.open = false;
                                         }
 
                                         contentItem: RowLayout {
@@ -666,8 +708,8 @@ MouseArea {
                                 }
                                 IconToolbarButton {
                                     implicitWidth: height
-                                    toggled: sortMenuPopup.visible
-                                    onClicked: sortMenuPopup.visible = !sortMenuPopup.visible
+                                    toggled: sortMenuPopup.open
+                                    onClicked: sortMenuPopup.open = !sortMenuPopup.open
                                     text: "sort"
                                     StyledToolTip {
                                         text: Translation.tr("Sort wallpapers")
@@ -675,6 +717,11 @@ MouseArea {
                                 }
                                 ToolbarTextField {
                                     id: filterField
+                                    Component.onCompleted: {
+                                        root.activeFilterField = filterField
+                                        Wallpapers.searchQuery = text
+                                    }
+                                    Component.onDestruction: if (root.activeFilterField === filterField) root.activeFilterField = null
                                     placeholderText: focus
                                         ? Translation.tr("Search wallpapers")
                                         : Translation.tr("Search wallpapers")
@@ -703,11 +750,16 @@ MouseArea {
                         }
 
                         Loader {
-                            active: root.isOnlineSource
+                            active: root.isOnlineSource && root.source !== "wallhaven"
                             visible: active
                             sourceComponent: Toolbar {
                                 ToolbarTextField {
                                     id: onlineSearchField
+                                    Component.onCompleted: {
+                                        root.activeFilterField = onlineSearchField
+                                        OnlineWallpapers.query = text
+                                    }
+                                    Component.onDestruction: if (root.activeFilterField === onlineSearchField) root.activeFilterField = null
                                     placeholderText: Translation.tr("Search online wallpapers")
                                     clip: true
                                     font.pixelSize: Appearance.font.pixelSize.small
@@ -771,6 +823,127 @@ MouseArea {
                             }
                         }
 
+                        Loader {
+                            active: root.source === "wallhaven"
+                            visible: active
+                            sourceComponent: Toolbar {
+                                id: wallhavenToolbar
+
+                                property bool _searchFieldReady: false
+
+                                Timer {
+                                    id: searchDebounce
+                                    interval: 500
+                                    onTriggered: WallhavenSearch.search(wallhavenSearchField.text, 1)
+                                }
+
+                                ToolbarTextField {
+                                    id: wallhavenSearchField
+                                    Component.onDestruction: if (root.activeFilterField === wallhavenSearchField) root.activeFilterField = null
+                                    text: WallhavenSearch.currentQuery
+                                    placeholderText: Translation.tr("Search Wallhaven...")
+                                    Layout.preferredWidth: 220
+                                    onTextChanged: {
+                                        if (wallhavenToolbar._searchFieldReady)
+                                            searchDebounce.restart()
+                                    }
+                                    onAccepted: {
+                                        searchDebounce.stop()
+                                        WallhavenSearch.search(text, 1)
+                                    }
+                                    onActiveFocusChanged: root.filterFieldFocused = activeFocus
+                                    Keys.onPressed: event => {
+                                        if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
+                                            event.accepted = true
+                                            return
+                                        }
+                                        event.accepted = false
+                                    }
+                                    Component.onCompleted: {
+                                        root.activeFilterField = wallhavenSearchField
+                                        Qt.callLater(() => wallhavenToolbar._searchFieldReady = true)
+                                    }
+                                }
+
+                                RowLayout {
+                                    visible: WallhavenSearch.currentResults.length > 0
+                                    spacing: 4
+
+                                    IconToolbarButton {
+                                        implicitWidth: height
+                                        enabled: !WallhavenSearch.fetching && WallhavenSearch.currentPage > 1
+                                        text: "chevron_left"
+                                        onClicked: WallhavenSearch.previousPage()
+                                    }
+
+                                    ToolbarTextField {
+                                        id: wallhavenPageField
+                                        implicitWidth: Math.max(40, wallhavenPageField.contentWidth + 24)
+                                        horizontalAlignment: Text.AlignHCenter
+                                        text: WallhavenSearch.currentPage.toString()
+                                        font.pixelSize: Appearance.font.pixelSize.small
+                                        inputMethodHints: Qt.ImhDigitsOnly
+                                        validator: IntValidator { bottom: 1; top: WallhavenSearch.lastPage }
+                                        onAccepted: {
+                                            const p = parseInt(text);
+                                            if (p > 0 && p <= WallhavenSearch.lastPage) {
+                                                WallhavenSearch.search(WallhavenSearch.currentQuery, p);
+                                            } else {
+                                                text = WallhavenSearch.currentPage.toString();
+                                            }
+                                        }
+                                        Connections {
+                                            target: WallhavenSearch
+                                            function onSearchCompleted() {
+                                                wallhavenPageField.text = WallhavenSearch.currentPage.toString();
+                                            }
+                                        }
+                                    }
+
+                                    StyledText {
+                                        text: "/ " + WallhavenSearch.lastPage
+                                        font.pixelSize: Appearance.font.pixelSize.small
+                                        color: Appearance.colors.colSubtext
+                                    }
+
+                                    IconToolbarButton {
+                                        implicitWidth: height
+                                        enabled: !WallhavenSearch.fetching && WallhavenSearch.currentPage < WallhavenSearch.lastPage
+                                        text: "chevron_right"
+                                        onClicked: WallhavenSearch.nextPage()
+                                    }
+                                }
+
+                                IconToolbarButton {
+                                    implicitWidth: height
+                                    text: "tune"
+                                    toggled: gridLoader.item?.showSettings
+                                    onClicked: { if (gridLoader.item) gridLoader.item.toggleSettings() }
+                                    StyledToolTip {
+                                        text: Translation.tr("Wallhaven search settings")
+                                    }
+                                }
+
+                                IconToolbarButton {
+                                    implicitWidth: height
+                                    text: root.useDarkMode ? "dark_mode" : "light_mode"
+                                    onClicked: root.useDarkMode = !root.useDarkMode
+                                    StyledToolTip {
+                                        text: Translation.tr("Toggle light/dark mode for applied wallpaper")
+                                    }
+                                }
+
+                                IconToolbarButton {
+                                    implicitWidth: height
+                                    text: "refresh"
+                                    onClicked: WallhavenSearch.search(WallhavenSearch.currentQuery, 1)
+                                    StyledToolTip {
+                                        text: Translation.tr("Refresh search results")
+                                    }
+                                }
+                            }
+                        }
+
                         ToolbarPairedFab {
                             iconText: "close"
                             onClicked: {
@@ -793,12 +966,13 @@ MouseArea {
             }
             if (GlobalStates.wallpaperSelectorOpen && monitorIsFocused) {
                 if (root.source === "local")
-                    filterField.forceActiveFocus()
+                    root.activeFilterField?.forceActiveFocus()
                 else
                     root.forceActiveFocus()
             } else if (!GlobalStates.wallpaperSelectorOpen) {
-                sortMenuPopup.visible = false;
+                sortMenuPopup.open = false;
                 Wallpapers.stopPreview();
+                WallhavenSearch.clearQuery();
             }
         }
     }

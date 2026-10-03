@@ -5,7 +5,11 @@ import QtQuick
 import QtQuick.Layouts
 
 BarWidgetSwitcherArea {
+    Component.onCompleted: ResourceUsage.consumers++
+    Component.onDestruction: ResourceUsage.consumers--
     id: root
+    property color contentColor: Appearance.colors.colOnSecondaryContainer
+    property bool contentColorOverridden: false
     property bool alwaysShowAllResources: false
     horizontalExtraPadding: 12
 
@@ -15,12 +19,16 @@ BarWidgetSwitcherArea {
         RowLayout {
             spacing: 0
             Resource {
+                contentColor: root.contentColor
+                contentColorOverridden: root.contentColorOverridden
                 iconName: "memory"
                 shown: Config.options.bar.resources.alwaysShowRam
                 percentage: ResourceUsage.memoryUsedPercentage
                 warningThreshold: Config.options.bar.resources.memoryWarningThreshold
             }
             Resource {
+                contentColor: root.contentColor
+                contentColorOverridden: root.contentColorOverridden
                 iconName: "planner_review"
                 shown: Config.options.bar.resources.alwaysShowCpu
                 percentage: ResourceUsage.cpuUsage
@@ -28,18 +36,24 @@ BarWidgetSwitcherArea {
                 warningThreshold: Config.options.bar.resources.cpuWarningThreshold
             }
             Resource {
+                contentColor: root.contentColor
+                contentColorOverridden: root.contentColorOverridden
                 iconName: "thermostat"
                 shown: Config.options.bar.resources.alwaysShowCpuTemp
                 percentage: ResourceUsage.cpuTemp / 100
                 Layout.leftMargin: shown ? 6 : 0
             }
             Resource {
+                contentColor: root.contentColor
+                contentColorOverridden: root.contentColorOverridden
                 iconName: "hard_drive"
                 shown: Config.options.bar.resources.alwaysShowDisk
                 percentage: ResourceUsage.diskUsedPercentage
                 Layout.leftMargin: shown ? 6 : 0
             }
             Resource {
+                contentColor: root.contentColor
+                contentColorOverridden: root.contentColorOverridden
                 iconName: "swap_horiz"
                 shown: Config.options.bar.resources.alwaysShowSwap
                 percentage: ResourceUsage.swapUsedPercentage
@@ -53,12 +67,16 @@ BarWidgetSwitcherArea {
         RowLayout {
             spacing: 0
             Resource {
+                contentColor: root.contentColor
+                contentColorOverridden: root.contentColorOverridden
                 iconName: "memory"
                 shown: Config.options.bar.resources.alwaysShowRam
                 percentage: ResourceUsage.memoryUsedPercentage
                 warningThreshold: Config.options.bar.resources.memoryWarningThreshold
             }
             Resource {
+                contentColor: root.contentColor
+                contentColorOverridden: root.contentColorOverridden
                 iconName: "planner_review"
                 shown: Config.options.bar.resources.alwaysShowCpu
                 percentage: ResourceUsage.cpuUsage
@@ -66,18 +84,24 @@ BarWidgetSwitcherArea {
                 warningThreshold: Config.options.bar.resources.cpuWarningThreshold
             }
             Resource {
+                contentColor: root.contentColor
+                contentColorOverridden: root.contentColorOverridden
                 iconName: "thermostat"
                 shown: Config.options.bar.resources.alwaysShowCpuTemp
                 percentage: ResourceUsage.cpuTemp / 100
                 Layout.leftMargin: shown ? 6 : 0
             }
             Resource {
+                contentColor: root.contentColor
+                contentColorOverridden: root.contentColorOverridden
                 iconName: "hard_drive"
                 shown: Config.options.bar.resources.alwaysShowDisk
                 percentage: ResourceUsage.diskUsedPercentage
                 Layout.leftMargin: shown ? 6 : 0
             }
             Resource {
+                contentColor: root.contentColor
+                contentColorOverridden: root.contentColorOverridden
                 iconName: "swap_horiz"
                 shown: Config.options.bar.resources.alwaysShowSwap
                 percentage: ResourceUsage.swapUsedPercentage
@@ -91,6 +115,8 @@ BarWidgetSwitcherArea {
         ColumnLayout {
             spacing: 7
             Resource {
+                contentColor: root.contentColor
+                contentColorOverridden: root.contentColorOverridden
                 Layout.alignment: Qt.AlignHCenter
                 iconName: "memory"
                 vertical: true
@@ -99,6 +125,8 @@ BarWidgetSwitcherArea {
                 warningThreshold: Config.options.bar.resources.memoryWarningThreshold
             }
             Resource {
+                contentColor: root.contentColor
+                contentColorOverridden: root.contentColorOverridden
                 Layout.alignment: Qt.AlignHCenter
                 iconName: "planner_review"
                 vertical: true
@@ -107,6 +135,8 @@ BarWidgetSwitcherArea {
                 warningThreshold: Config.options.bar.resources.cpuWarningThreshold
             }
             Resource {
+                contentColor: root.contentColor
+                contentColorOverridden: root.contentColorOverridden
                 Layout.alignment: Qt.AlignHCenter
                 iconName: "thermostat"
                 vertical: true
@@ -114,6 +144,8 @@ BarWidgetSwitcherArea {
                 percentage: ResourceUsage.cpuTemp / 100
             }
             Resource {
+                contentColor: root.contentColor
+                contentColorOverridden: root.contentColorOverridden
                 Layout.alignment: Qt.AlignHCenter
                 iconName: "hard_drive"
                 vertical: true
@@ -121,6 +153,8 @@ BarWidgetSwitcherArea {
                 percentage: ResourceUsage.diskUsedPercentage
             }
             Resource {
+                contentColor: root.contentColor
+                contentColorOverridden: root.contentColorOverridden
                 Layout.alignment: Qt.AlignHCenter
                 iconName: "swap_horiz"
                 vertical: true
@@ -135,6 +169,8 @@ BarWidgetSwitcherArea {
         ColumnLayout {
             spacing: 7
             Resource {
+                contentColor: root.contentColor
+                contentColorOverridden: root.contentColorOverridden
                 Layout.alignment: Qt.AlignHCenter
                 iconName: "memory"
                 vertical: true
@@ -143,6 +179,8 @@ BarWidgetSwitcherArea {
                 warningThreshold: Config.options.bar.resources.memoryWarningThreshold
             }
             Resource {
+                contentColor: root.contentColor
+                contentColorOverridden: root.contentColorOverridden
                 Layout.alignment: Qt.AlignHCenter
                 iconName: "planner_review"
                 vertical: true
@@ -151,6 +189,8 @@ BarWidgetSwitcherArea {
                 warningThreshold: Config.options.bar.resources.cpuWarningThreshold
             }
             Resource {
+                contentColor: root.contentColor
+                contentColorOverridden: root.contentColorOverridden
                 Layout.alignment: Qt.AlignHCenter
                 iconName: "thermostat"
                 vertical: true
@@ -158,6 +198,8 @@ BarWidgetSwitcherArea {
                 percentage: ResourceUsage.cpuTemp / 100
             }
             Resource {
+                contentColor: root.contentColor
+                contentColorOverridden: root.contentColorOverridden
                 Layout.alignment: Qt.AlignHCenter
                 iconName: "hard_drive"
                 vertical: true
@@ -165,6 +207,8 @@ BarWidgetSwitcherArea {
                 percentage: ResourceUsage.diskUsedPercentage
             }
             Resource {
+                contentColor: root.contentColor
+                contentColorOverridden: root.contentColorOverridden
                 Layout.alignment: Qt.AlignHCenter
                 iconName: "swap_horiz"
                 vertical: true

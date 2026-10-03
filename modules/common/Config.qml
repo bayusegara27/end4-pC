@@ -88,6 +88,7 @@ Singleton {
             property JsonObject ai: JsonObject {
                 property string systemPrompt: "## Style\n- Use casual tone, don't be formal!\n- Always be brief and to the point, unless asked otherwise\n- Don't repeat the user's question\n- Be approachable: Avoid using overly complicated, domain-specific terms and provide analogies when asked to explain a concept\n\n## Context (ignore when irrelevant)\n- You are a helpful and inspiring sidebar assistant on a {DISTRO} Linux system\n- Desktop environment: {DE}\n- Current date & time: {DATETIME}\n- Focused app: {WINDOWCLASS}\n\n## Presentation\n- Use Markdown features in your response: \n  - **Bold** text to **highlight keywords** in your response\n  - **Split long information into small sections** with h2 headers and a relevant emoji at the start of it (for example `## 🐧 Linux`). Bullet points are preferred over long paragraphs, unless you're offering writing support or instructed otherwise by the user.\n- Asked to compare different options? You should firstly use a table to compare the main aspects, then elaborate or include relevant comments from online forums *after* the table. Make sure to provide a final recommendation for the user's use case!\n- Use LaTeX formatting for mathematical and scientific notations whenever appropriate. Enclose all LaTeX '$$' delimiters. NEVER generate LaTeX code in a latex block unless the user explicitly asks for it. DO NOT use LaTeX for regular documents (resumes, letters, essays, CVs, etc.).\n\nThanks!\n"
                 property string tool: "functions" // search, functions, or none
+                property string vllmEndpoint: "http://localhost:8000"
                 property list<var> extraModels: [
                     {
                         "api_format": "openai", // Most of the time you want "openai". Use "gemini" for Google's models
@@ -136,6 +137,9 @@ Singleton {
                 property JsonObject palette: JsonObject {
                     property string type: "auto" // Allowed: auto, scheme-content, scheme-expressive, scheme-fidelity, scheme-fruit-salad, scheme-monochrome, scheme-neutral, scheme-rainbow, scheme-tonal-spot
                     property string accentColor: ""
+                    property string namedScheme: "" // "" = from wallpaper. Allowed: any file name in scripts/colors/schemes (gruvbox)
+                    property string namedSchemePrimary: ""
+                    property string namedSchemeSecondary: ""
                 }
             }
 
@@ -215,6 +219,9 @@ Singleton {
                         property real scrollFactor: 0.7
                     }
                 }
+                property JsonObject misc: JsonObject {
+                    property bool focusOnActivate: false
+                }
             }
 
             property JsonObject apps: JsonObject {
@@ -239,6 +246,15 @@ Singleton {
             property JsonObject background: JsonObject {
                 property string lockWall: ""
                 property bool widgetsLocked: false
+                property JsonObject collage: JsonObject {
+                    property bool enable: false
+                    property int gap: 30
+                    property int margin: 30
+                    property int radius: 30
+                    property int primaryId: 1
+                    property int nextId: 2
+                    property string tree: "{\"t\":\"leaf\",\"id\":1,\"img\":\"\"}"
+                }
                 property bool showGrid: true
                 property bool showBlur: false
                 property real blurRadius: 32
@@ -332,6 +348,7 @@ Singleton {
                         property real y: 100
                         property real z: 0
                         property string sizeMode: "2x2"
+                        property bool vertical: false
                         property int clockCount: 4 
                     }
 
@@ -489,6 +506,7 @@ Singleton {
                 property int centeredWallpaperSize: 400
                 property string centeredWallpaperColor: "primaryContainer"
                 property bool centeredWallpaperOnlyWhenLocked: false
+                property string centeredWallpaperImage: ""
                 property string wallpaperAnimation: "magic"
                 property bool enableWallpaperPreview: false
                 property string thumbnailPath: ""
@@ -519,10 +537,11 @@ Singleton {
                 property bool followFrameColor: false
                 property bool centerOnlyReserveFrame: false
                 property bool bottom: false // Instead of top
-                property int cornerStyle: 0 // 0: Hug | 1: Float | 2: Plain rectangle
+                property int cornerStyle: 0 // 0: Hug | 1: Float | 2: Plain rectangle | 3: M3 | 4: M3 Hug | 5: Panel
                 property string groupColor: "layer1"
                 property bool floatStyleShadow: true // Show shadow behind bar when cornerStyle == 1 (Float)
                 property string borderless: "pills"
+                property list<var> widgetStyles: []
                 property string topLeftIcon: "spark" // Options: "distro" or any icon name in ~/.config/quickshell/ii/assets/icons
                 property bool showBackground: true
                 property bool verbose: true
@@ -538,6 +557,11 @@ Singleton {
                     property int memoryWarningThreshold: 95
                     property int swapWarningThreshold: 85
                     property int cpuWarningThreshold: 90
+                }
+
+                property JsonObject aiUsage: JsonObject {
+                    property int tokenLimit: 1000000
+                    property int updateInterval: 60
                 }
 
                 property JsonObject dynamicIsland: JsonObject {
@@ -575,6 +599,7 @@ Singleton {
                     property int shown: 10
                     property bool showAppIcons: false
                     property string indicatorStyle: "dot" // "dot" or "icon"
+                    property string style: "default" // "default", "gnome", "dots", "ticks"
                     property bool alwaysShowNumbers: true
                     property int showNumberDelay: 300 // milliseconds
                     property list<string> numberMap: ["1", "2"] // Characters to show instead of numbers on workspace indicator
@@ -612,6 +637,9 @@ Singleton {
                 property int full: 101
                 property bool automaticSuspend: true
                 property int suspend: 3
+                property int peripheralLow: 20
+                property int peripheralCritical: 5
+                property bool peripheralNotify: true
             }
 
             property JsonObject calendar: JsonObject {
@@ -646,10 +674,27 @@ Singleton {
 
             property JsonObject interactions: JsonObject {
                 property JsonObject scrolling: JsonObject {
-                    property bool fasterTouchpadScroll: false // Enable faster scrolling with touchpad
-                    property int mouseScrollDeltaThreshold: 120 // delta >= this then it gets detected as mouse scroll rather than touchpad
-                    property int mouseScrollFactor: 120
-                    property int touchpadScrollFactor: 450
+                    property bool fasterTouchpadScroll: true // Master switch for inertial scroll engine
+
+                    // === Touchpad physics ===
+                    property real flingFriction: 0.002
+                    property real flingStopThreshold: 0.01
+                    // Sensitivity: pixels per angleDelta unit during finger-follow phase
+                    property real touchpadSensitivity: 3.5
+                    // Velocity reflection coefficient at bounds (0 = hard stop, 1 = perfect bounce)
+                    property real bounceDamping: 0.3
+
+                    // === Mouse wheel ===
+                    property int wheelScrollAmount: 100
+                    property int wheelDurationMin: 200
+                    property int wheelDurationMax: 400
+
+                    // === Detection ===
+                    property int mouseScrollDeltaThreshold: 120 // angleDelta >= this = mouse wheel
+
+                    // === Relative Multipliers ===
+                    property real touchpadScrollFactor: 1.0 // scales touchpadSensitivity per-instance
+                    property real mouseScrollFactor: 1.0    // scales wheelScrollAmount per-instance
                 }
                 property JsonObject deadPixelWorkaround: JsonObject { // Hyprland leaves out 1 pixel on the right for interactions
                     property bool enable: false
@@ -805,6 +850,8 @@ Singleton {
                 property int nonAppResultDelay: 30 // This prevents lagging when typing
                 property string engineBaseUrl: "https://www.google.com/search?q="
                 property list<string> excludedSites: ["quora.com", "facebook.com"]
+                property list<var> clipboardPins: []
+                property bool clipboardPreviewPopup: false
                 property bool sloppy: false // Uses levenshtein distance based scoring instead of fuzzy sort. Very weird.
                 property JsonObject prefix: JsonObject {
                     property bool showDefaultActionsWithoutPrefix: true
@@ -894,10 +941,14 @@ Singleton {
             property JsonObject custom: JsonObject {
                 property string distroIcon: "google-gemini-symbolic"
                 property bool colorizeIcon: true
+                property string iconColor: "onLayer0"
+                property string iconsPath: ""
             }
 
             property JsonObject screenRecord: JsonObject {
                 property string savePath: Directories.videos.replace("file://","") // strip "file://"
+                property bool systemAudio: false
+                property bool microphone: false
             }
 
             property JsonObject screenSnip: JsonObject {
@@ -944,6 +995,15 @@ Singleton {
                 property bool closeAfterSelection: true
                 property int changeInterval: 0 
                 property string sortMode: "time"
+                property string wallhavenApiKey: "" // fallback; keyring ("/wallhaven <key>") takes precedence
+                property string wallhavenCategories: "111"
+                property string wallhavenPurity: "100"
+                property string wallhavenSorting: "relevance"
+                property string wallhavenOrder: "desc"
+                property string wallhavenRatios: ""
+                property string wallhavenColors: ""
+                property string wallhavenQuery: ""
+                property string wallhavenTopRange: "1y"
             }
 
             property JsonObject windows: JsonObject {
