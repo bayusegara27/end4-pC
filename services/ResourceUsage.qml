@@ -14,7 +14,7 @@ Singleton {
     property real memoryTotal: 1
     property real memoryFree: 0
     property real memoryUsed: memoryTotal - memoryFree
-    property real memoryUsedPercentage: memoryUsed / memoryTotal
+    property real memoryUsedPercentage: memoryTotal > 1 ? (memoryUsed / memoryTotal) : 0
     property real swapTotal: 1
     property real swapFree: 0
     property real swapUsed: swapTotal - swapFree
@@ -162,6 +162,7 @@ Singleton {
 
             const textStat = fileStat.text()
             const cpuLine  = textStat.match(/^cpu\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)\s+(\d+)/)
+            const isFirstSample = !previousCpuStats
             if (cpuLine) {
                 const stats = cpuLine.slice(1).map(Number)
                 const total = stats.reduce((a, b) => a + b, 0)
@@ -175,7 +176,7 @@ Singleton {
             }
 
             root.updateHistories()
-            interval = Config.options?.resources?.updateInterval ?? 3000
+            interval = isFirstSample ? 400 : (Config.options?.resources?.updateInterval ?? 3000)
         }
     }
 

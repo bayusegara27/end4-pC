@@ -26,7 +26,8 @@ Canvas {
         var h = height
         ctx.clearRect(0, 0, w, h)
         var pts = dataPoints
-        if (!pts || pts.length < 2) return
+        if (!pts || pts.length === 0) return
+        if (pts.length === 1) pts = [pts[0], pts[0]]
 
         var max = maxValue > 0 ? maxValue : 1.0
         var stepX = w / (pts.length - 1)

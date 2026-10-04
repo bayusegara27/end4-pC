@@ -5,6 +5,7 @@ import Qt5Compat.GraphicalEffects
 import Quickshell
 import Quickshell.Io
 import qs
+import qs.services
 import qs.modules.common.widgets.widgetCanvas
 import qs.modules.common.widgets
 import qs.modules.common
@@ -85,17 +86,32 @@ AbstractBackgroundWidget {
     }
     readonly property int overflowCount: Math.max(0, memberCount - visibleMemberCount)
 
-    // ── Card ──
+    StyledRectangularShadow {
+        target: card
+        z: -2
+        visible: Config.options.background.widgets.shadow
+    }
+
+    // ── Main Glass Card ──
     Rectangle {
         id: card
         implicitWidth: root.widgetWidth
         implicitHeight: root.cardHeight
+        width: root.widgetWidth
+        height: root.cardHeight
         radius: Appearance.rounding?.verylarge ?? 30
         color: Appearance.colors.colPrimaryContainer
+        clip: true
 
-        StyledRectangularShadow {
-            target: card
-            z: -2
+        FastBlurred {
+            anchors.fill: parent
+            blurSource: root.wallpaperItem
+            cardRadius: card.radius
+            tint: Appearance.colors.colLayer1
+            tintOpacity: 0.55
+            trackX: root.x
+            trackY: root.y
+            visible: Config.options.background.widgets.blurWidgets && !GlobalStates.isLiveWallpaperRunning
         }
 
         Loader {
@@ -163,54 +179,75 @@ AbstractBackgroundWidget {
             id: oneByTwoContent
             RowLayout {
                 anchors.fill: parent
-                spacing: 0
+                anchors.margins: 10
+                spacing: 10
 
-                // Left accent panel
+                // Left glass accent container
                 Rectangle {
                     Layout.fillHeight: true
-                    Layout.preferredWidth: 100
-                    radius: Appearance.rounding.verylarge ?? 30
-                    color: root.inChannel ? Appearance.colors.colPrimary : Appearance.colors.colOutlineVariant
-
-                    // Fill right side gap
-                    Rectangle {
-                        width: parent.radius
-                        height: parent.height
-                        anchors.right: parent.right
-                        color: parent.color
-                    }
+                    Layout.preferredWidth: 94
+                    radius: (Appearance.rounding?.verylarge ?? 30) - 8
+                    color: root.inChannel 
+                        ? ColorUtils.transparentize(Appearance.colors.colPrimary, 0.85) 
+                        : ColorUtils.transparentize(Appearance.colors.colLayer1, 0.5)
+                    border.width: root.inChannel ? 1 : 0
+                    border.color: root.inChannel ? ColorUtils.transparentize(Appearance.colors.colPrimary, 0.6) : "transparent"
 
                     ColumnLayout {
-                        anchors.centerIn: parent
+                        anchors.fill: parent
+                        anchors.margins: 8
                         spacing: 2
 
-                        MaterialSymbol {
+                        Item { Layout.fillHeight: true }
+
+                        MaterialShapeWrappedMaterialSymbol {
                             Layout.alignment: Qt.AlignHCenter
-                            iconSize: 32
+                            shape: MaterialShape.Shape.Cookie12Sided
+                            color: root.inChannel ? Appearance.colors.colPrimary : Appearance.colors.colOutlineVariant
+                            colSymbol: Appearance.colors.colOnPrimary
                             text: root.inChannel ? "headset" : "headset_off"
-                            color: Appearance.colors.colOnPrimary
+                            iconSize: 20
                             fill: 1
+                            padding: 6
+                            implicitWidth: 36
+                            implicitHeight: 36
                         }
+
+                        Item { Layout.preferredHeight: 2 }
+
                         StyledText {
                             Layout.alignment: Qt.AlignHCenter
-                            Layout.maximumWidth: 80
+                            Layout.maximumWidth: 78
                             text: root.inChannel ? root.channelName : "Offline"
                             font.pixelSize: Appearance.font.pixelSize.smaller
                             font.weight: Font.Bold
-                            color: Appearance.colors.colOnPrimary
-                            opacity: 0.95
+                            color: Appearance.colors.colOnPrimaryContainer
                             elide: Text.ElideRight
                             horizontalAlignment: Text.AlignHCenter
                         }
+
                         StyledText {
                             Layout.alignment: Qt.AlignHCenter
                             visible: root.inChannel
                             text: root.memberCount + " member" + (root.memberCount !== 1 ? "s" : "")
-                            font.pixelSize: Appearance.font.pixelSize.smallest
-                            color: Appearance.colors.colOnPrimary
-                            opacity: 0.75
+                            font.pixelSize: Appearance.font.pixelSize.smallest ?? 10
+                            color: Appearance.colors.colOnPrimaryContainer
+                            opacity: 0.65
+                            horizontalAlignment: Text.AlignHCenter
                         }
+
+                        Item { Layout.fillHeight: true }
                     }
+                }
+
+                // Vertical separator
+                Rectangle {
+                    Layout.fillHeight: true
+                    Layout.topMargin: 4
+                    Layout.bottomMargin: 4
+                    implicitWidth: 1
+                    color: Appearance.colors.colOutlineVariant
+                    opacity: 0.25
                 }
 
                 // Right member list
@@ -221,12 +258,23 @@ AbstractBackgroundWidget {
                     
                     property bool expanded: false
 
+                    StyledText {
+                        anchors.centerIn: parent
+                        visible: !root.inChannel
+                        text: Translation.tr("Not connected")
+                        font.pixelSize: Appearance.font.pixelSize.smaller
+                        color: Appearance.colors.colOnPrimaryContainer
+                        opacity: 0.5
+                    }
+
                     ListView {
                         id: memberListVertical
                         anchors {
                             fill: parent
-                            margins: 10
-                            leftMargin: 12
+                            topMargin: 2
+                            bottomMargin: 2
+                            leftMargin: 2
+                            rightMargin: 2
                         }
                         spacing: 4
                         clip: true
@@ -236,16 +284,16 @@ AbstractBackgroundWidget {
 
                         model: {
                             if (!root.inChannel) return 0
-                            if (rightPanel.expanded) return root.memberCount + 1 // +1 for minimize button
-                            if (root.memberCount > maxCollapsed) return maxCollapsed + 1 // 3 members + 1 badge
+                            if (rightPanel.expanded) return root.memberCount + 1
+                            if (root.memberCount > maxCollapsed + 1) return maxCollapsed + 1
                             return root.memberCount
                         }
 
                         delegate: Item {
-                            width: ListView.view.width
-                            height: 22
+                            width: memberListVertical.width
+                            height: 20
 
-                            readonly property bool isBadge: !rightPanel.expanded && root.memberCount > (ListView.view?.maxCollapsed ?? 3) && index === (ListView.view?.maxCollapsed ?? 3)
+                            readonly property bool isBadge: !rightPanel.expanded && root.memberCount > (memberListVertical.maxCollapsed + 1) && index === memberListVertical.maxCollapsed
                             readonly property bool isMinimize: rightPanel.expanded && index === root.memberCount
                             readonly property var modelData: (!isBadge && !isMinimize && index < root.memberCount) ? root.members[index] : null
 
@@ -258,15 +306,15 @@ AbstractBackgroundWidget {
                                 // Avatar
                                 Image {
                                     source: modelData ? (modelData.avatar || "") : ""
-                                    Layout.preferredWidth: 22
-                                    Layout.preferredHeight: 22
+                                    Layout.preferredWidth: 20
+                                    Layout.preferredHeight: 20
                                     Layout.alignment: Qt.AlignVCenter
-                                    sourceSize: Qt.size(22, 22)
+                                    sourceSize: Qt.size(20, 20)
                                     fillMode: Image.PreserveAspectCrop
 
                                     layer.enabled: true
                                     layer.effect: OpacityMask {
-                                        maskSource: Rectangle { width: 22; height: 22; radius: 11 }
+                                        maskSource: Rectangle { width: 20; height: 20; radius: 10 }
                                     }
                                 }
 
@@ -302,29 +350,29 @@ AbstractBackgroundWidget {
                             Item {
                                 anchors.fill: parent
                                 visible: isBadge
-                                
+
                                 Rectangle {
                                     anchors.verticalCenter: parent.verticalCenter
                                     anchors.left: parent.left
-                                    anchors.leftMargin: 26
-                                    height: 20
-                                    width: badgeLayout.implicitWidth + 24
-                                    radius: 10
-                                    color: Appearance.colors.colLayer1
-                                    
+                                    anchors.leftMargin: 28
+                                    height: 18
+                                    width: badgeLayout.implicitWidth + 16
+                                    radius: 9
+                                    color: ColorUtils.transparentize(Appearance.colors.colLayer1, 0.5)
+
                                     RowLayout {
                                         id: badgeLayout
                                         anchors.centerIn: parent
                                         spacing: 4
-                                        
+
                                         MaterialSymbol {
                                             text: "expand_more"
                                             color: Appearance.colors.colOnPrimaryContainer
-                                            iconSize: 14
+                                            iconSize: 13
                                         }
                                         StyledText {
-                                            text: "+" + (root.memberCount - (ListView.view?.maxCollapsed ?? 3)) + " Show more"
-                                            font.pixelSize: Appearance.font.pixelSize.smallest
+                                            text: "+" + (root.memberCount - memberListVertical.maxCollapsed) + " more"
+                                            font.pixelSize: Appearance.font.pixelSize.smallest ?? 10
                                             font.weight: Font.DemiBold
                                             color: Appearance.colors.colOnPrimaryContainer
                                         }
@@ -337,33 +385,33 @@ AbstractBackgroundWidget {
                                 }
                             }
 
-                            // 3. "Minimize" Badge
+                            // 3. "Show less" minimize button
                             Item {
                                 anchors.fill: parent
                                 visible: isMinimize
-                                
+
                                 Rectangle {
                                     anchors.verticalCenter: parent.verticalCenter
                                     anchors.left: parent.left
-                                    anchors.leftMargin: 26
-                                    height: 20
-                                    width: minimizeLayout.implicitWidth + 24
-                                    radius: 10
-                                    color: Appearance.colors.colLayer1
-                                    
+                                    anchors.leftMargin: 28
+                                    height: 18
+                                    width: minimizeLayout.implicitWidth + 16
+                                    radius: 9
+                                    color: ColorUtils.transparentize(Appearance.colors.colLayer1, 0.5)
+
                                     RowLayout {
                                         id: minimizeLayout
                                         anchors.centerIn: parent
                                         spacing: 4
-                                        
+
                                         MaterialSymbol {
                                             text: "expand_less"
                                             color: Appearance.colors.colOnPrimaryContainer
-                                            iconSize: 14
+                                            iconSize: 13
                                         }
                                         StyledText {
                                             text: "Show less"
-                                            font.pixelSize: Appearance.font.pixelSize.smallest
+                                            font.pixelSize: Appearance.font.pixelSize.smallest ?? 10
                                             font.weight: Font.DemiBold
                                             color: Appearance.colors.colOnPrimaryContainer
                                         }
@@ -374,7 +422,7 @@ AbstractBackgroundWidget {
                                     cursorShape: Qt.PointingHandCursor
                                     onClicked: {
                                         rightPanel.expanded = false
-                                        ListView.view?.positionViewAtBeginning()
+                                        memberListVertical.positionViewAtBeginning()
                                     }
                                 }
                             }

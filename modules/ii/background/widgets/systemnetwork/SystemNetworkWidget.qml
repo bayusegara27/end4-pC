@@ -12,6 +12,8 @@ import qs.modules.ii.background.widgets
 
 AbstractBackgroundWidget {
     id: root
+    Component.onCompleted: ResourceUsage.consumers++
+    Component.onDestruction: ResourceUsage.consumers--
     configEntryName: "systemNetwork"
     hoverEnabled: true
 
