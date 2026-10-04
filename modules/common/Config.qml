@@ -628,6 +628,7 @@ Singleton {
                     property int maxWidth: 280
                     property int minWidth: 100
                     property bool showLyrics: false
+                    property string lyricsProvider: "auto"
                 }
             }
 

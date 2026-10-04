@@ -57,6 +57,17 @@ Item {
                         onClicked: LyricsService.restartLyrics()
                     }
                 }
+
+                StyledText {
+                    Layout.alignment: Qt.AlignHCenter
+                    font.pixelSize: Appearance.font.pixelSize.smaller
+                    color: root.dimColor
+                    text: {
+                        if (LyricsService.status === "loading") return "Searching lyrics..."
+                        if (LyricsService.status === "not_found") return "No lyrics found • Click to retry"
+                        return "No song playing"
+                    }
+                }
             }
         }
 
@@ -69,8 +80,8 @@ Item {
             model: LyricsService.lyricsLines
             currentIndex: LyricsService.activeIndex
             
-            preferredHighlightBegin: height * 0.4
-            preferredHighlightEnd: height * 0.6
+            preferredHighlightBegin: height * 0.35
+            preferredHighlightEnd: height * 0.55
             highlightRangeMode: ListView.StrictlyEnforceRange
             highlightMoveDuration: 400
             
@@ -86,7 +97,7 @@ Item {
                 readonly property int dist: Math.abs(index - ListView.view.currentIndex)
                 
                 property real targetSize: {
-                    if (dist === 0) return Appearance.font.pixelSize.large * 1.1
+                    if (dist === 0) return Appearance.font.pixelSize.large * 1.05
                     if (dist === 1) return Appearance.font.pixelSize.normal
                     return Appearance.font.pixelSize.small
                 }
@@ -104,6 +115,89 @@ Item {
                 
                 Behavior on opacity { NumberAnimation { duration: 500; easing.type: Easing.OutQuart } }
                 Behavior on color { ColorAnimation { duration: 500; easing.type: Easing.OutQuart } }
+            }
+        }
+
+        RowLayout {
+            Layout.fillWidth: true
+            Layout.topMargin: 2
+            visible: LyricsService.status === "ok"
+            spacing: 6
+
+            Rectangle {
+                id: providerTag
+                implicitHeight: 20
+                implicitWidth: providerRow.implicitWidth + 12
+                radius: 10
+                color: ColorUtils.transparentize(root.activeColor, 0.85)
+
+                RowLayout {
+                    id: providerRow
+                    anchors.centerIn: parent
+                    spacing: 4
+
+                    MaterialSymbol {
+                        iconSize: 11
+                        color: root.activeColor
+                        text: "music_note"
+                    }
+
+                    StyledText {
+                        text: LyricsService.providerName || "Synced"
+                        font.pixelSize: Appearance.font.pixelSize.smaller * 0.9
+                        color: root.textColor
+                        font.weight: Font.Medium
+                    }
+                }
+
+                MouseArea {
+                    anchors.fill: parent
+                    cursorShape: Qt.PointingHandCursor
+                    hoverEnabled: true
+                    onClicked: LyricsService.cycleProvider()
+                }
+            }
+
+            Item { Layout.fillWidth: true }
+
+            RowLayout {
+                spacing: 2
+                visible: LyricsService.synced
+
+                RippleButton {
+                    implicitWidth: 18
+                    implicitHeight: 18
+                    buttonRadius: 9
+                    colBackground: ColorUtils.transparentize(root.textColor, 0.9)
+                    contentItem: MaterialSymbol {
+                        iconSize: 12
+                        horizontalAlignment: Text.AlignHCenter
+                        color: root.textColor
+                        text: "remove"
+                    }
+                    downAction: () => LyricsService.adjustTiming(-0.5)
+                }
+
+                StyledText {
+                    text: (LyricsService.timingOffset > 0 ? "+" : "") + LyricsService.timingOffset.toFixed(1) + "s"
+                    font.pixelSize: Appearance.font.pixelSize.smaller * 0.85
+                    color: LyricsService.timingOffset !== 0.0 ? root.activeColor : root.dimColor
+                    font.features: { "tnum": 1 }
+                }
+
+                RippleButton {
+                    implicitWidth: 18
+                    implicitHeight: 18
+                    buttonRadius: 9
+                    colBackground: ColorUtils.transparentize(root.textColor, 0.9)
+                    contentItem: MaterialSymbol {
+                        iconSize: 12
+                        horizontalAlignment: Text.AlignHCenter
+                        color: root.textColor
+                        text: "add"
+                    }
+                    downAction: () => LyricsService.adjustTiming(0.5)
+                }
             }
         }
     }

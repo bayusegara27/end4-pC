@@ -17,6 +17,38 @@ Singleton {
     property int activeIndex: -1
     property string status: "loading"
     property var slots: ["", "", "", "", "", "", ""]
+    property string providerName: ""
+    property string preferredProvider: Config.options?.bar?.media?.lyricsProvider || "auto"
+    property real timingOffset: 0.0
+
+    readonly property var providerList: [
+        { id: "auto", name: "Automatic" },
+        { id: "lrclib", name: "LRCLIB" },
+        { id: "netease", name: "Netease Cloud Music" },
+        { id: "kugou", name: "Kugou" },
+        { id: "qqmusic", name: "QQ Music" },
+        { id: "ytmusic", name: "YouTube Music" }
+    ]
+
+    function cycleProvider() {
+        let idx = 0
+        for (let i = 0; i < root.providerList.length; i++) {
+            if (root.providerList[i].id === root.preferredProvider) {
+                idx = (i + 1) % root.providerList.length
+                break
+            }
+        }
+        root.preferredProvider = root.providerList[idx].id
+        if (Config.options?.bar?.media) {
+            Config.options.bar.media.lyricsProvider = root.preferredProvider
+        }
+        root.restartLyrics(root.preferredProvider)
+    }
+
+    function adjustTiming(delta) {
+        root.timingOffset = Math.round((root.timingOffset + delta) * 10) / 10
+        root.update()
+    }
 
     readonly property int before: 3
     readonly property int after:  3
@@ -42,7 +74,8 @@ Singleton {
     property real baseTime: Date.now()
 
     function currentPosition() {
-        return root.playing ? root.basePosition + (Date.now() - root.baseTime) / 1000 : root.basePosition
+        const base = root.playing ? root.basePosition + (Date.now() - root.baseTime) / 1000 : root.basePosition
+        return base + root.timingOffset
     }
 
     function resync() {
@@ -113,8 +146,16 @@ Singleton {
             onRead: data => {
                 const trimmed = data.trim()
                 console.log("LYRICS DEBUG READ:", trimmed.substring(0, 100) + "... LENGTH:", trimmed.length)
-                if (trimmed === "not_found") { root.status = "not_found"; return }
-                if (trimmed === "no_info")   { root.status = "no_info";   return }
+                if (trimmed === "not_found") { 
+                    root.status = "not_found"
+                    root.providerName = ""
+                    return 
+                }
+                if (trimmed === "no_info") { 
+                    root.status = "no_info"
+                    root.providerName = ""
+                    return 
+                }
 
                 const parts = trimmed.split("§")
                 if (parts.length < 3) {
@@ -127,7 +168,12 @@ Singleton {
                 }
 
                 let lines = []
+                let prov = ""
                 for (let i = 0; i < parts.length - 1; i += 2) {
+                    if (parts[i] === "provider") {
+                        prov = parts[i + 1] || ""
+                        continue
+                    }
                     const t = parseFloat(parts[i])
                     const txt = parts[i + 1] || ""
                     if (!isNaN(t)) lines.push({ time: t, text: txt })
@@ -135,13 +181,15 @@ Singleton {
 
                 if (lines.length === 0) { 
                     console.log("LYRICS DEBUG: lines length 0")
-                    root.status = "not_found"; 
+                    root.status = "not_found"
+                    root.providerName = ""
                     return 
                 }
 
+                root.providerName = prov || (root.preferredProvider === "auto" ? "Automatic" : root.preferredProvider)
                 root.lyricsLines = lines
                 root.activeIndex = -1
-                console.log("LYRICS DEBUG: ALL GOOD, status = ok")
+                console.log("LYRICS DEBUG: ALL GOOD, status = ok, provider =", root.providerName)
                 root.status = "ok"
                 root.resync()
             }
@@ -154,7 +202,10 @@ Singleton {
         onTriggered: lyricsProc.running = true
     }
 
-    function restartLyrics() {
+    function restartLyrics(prov) {
+        if (prov !== undefined && prov !== "") {
+            root.preferredProvider = prov
+        }
         lyricsProc.running = false
         boundaryTimer.stop()
         root.lyricsLines = []
@@ -166,19 +217,23 @@ Singleton {
         const artist   = root.activePlayer?.trackArtist ?? ""
         const duration = root.activePlayer?.length       ?? 0
 
-        if (!title || !artist) { root.status = "no_info"; return }
+        if (!title) { root.status = "no_info"; return }
 
         lyricsProc.command = [
             "python3",
             `${Directories.scriptPath}/lyrics/lyrics.py`,
-            title, artist, String(Math.floor(duration))
+            title, artist, String(Math.floor(duration)),
+            root.preferredProvider
         ]
         procRestartTimer.restart()
     }
 
     Connections {
         target: root.activePlayer
-        function onTrackTitleChanged() { root.restartLyrics() }
+        function onTrackTitleChanged() { 
+            root.timingOffset = 0.0
+            root.restartLyrics() 
+        }
         function onPlaybackStateChanged() { root.resync() }
     }
 
