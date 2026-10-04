@@ -19,6 +19,10 @@ Item {
     property bool isMinimal: Config.options.settings.style === "minimal"
 
     function goToTarget(target) {
+        if (target.page === "profile") {
+            root.showingProfile = true;
+            return;
+        }
         const idx = root.pages.findIndex(p => p.id === target.page);
         if (idx < 0) return;
         root.currentPage = idx;
@@ -98,19 +102,27 @@ Item {
                     spacing: 10
                     expanded: root.width > 900
 
-                    Item {
+                    Rectangle {
                         id: profileRowContainer
                         visible: true
-                        Layout.fillWidth: false
+                        Layout.fillWidth: true
+                        implicitHeight: profileRow.implicitHeight + (isMinimal ? 4 : 10)
+                        implicitWidth: profileRow.implicitWidth + (isMinimal ? 4 : 10)
                         Layout.margins: isMinimal ? 0 : 5
                         Layout.topMargin: 15
                         Layout.bottomMargin: isMinimal ? -30 : 0
-                        implicitHeight: profileRow.implicitHeight
-                        implicitWidth: profileRow.implicitWidth
+                        radius: Appearance.rounding.small
+                        color: root.showingProfile 
+                            ? Appearance.colors.colSecondaryContainer 
+                            : (profileHover.containsMouse ? Appearance.colors.colLayer1Hover : "transparent")
+
+                        Behavior on color {
+                            ColorAnimation { duration: 150 }
+                        }
 
                         RowLayout {
                             id: profileRow
-                            anchors.fill: parent
+                            anchors.centerIn: parent
                             spacing: 10
 
                             UserAvatar {
@@ -126,7 +138,7 @@ Item {
                                 StyledText {
                                     text: Config.options.profile.displayName === "" ? SystemInfo.username : Config.options.profile.displayName
                                     font.pixelSize: Appearance.font.pixelSize.normal
-                                    color: Appearance.colors.colOnLayer1
+                                    color: root.showingProfile ? Appearance.colors.colOnSecondaryContainer : Appearance.colors.colOnLayer1
                                     font.weight: Font.Medium
                                     elide: Text.ElideRight
                                     Layout.maximumWidth: 100
@@ -135,7 +147,7 @@ Item {
                                 StyledText {
                                     id: distroText
                                     font.pixelSize: Appearance.font.pixelSize.smaller
-                                    color: Appearance.colors.colSubtext
+                                    color: root.showingProfile ? Appearance.colors.colOnSecondaryContainer : Appearance.colors.colSubtext
                                     elide: Text.ElideRight
                                     Layout.maximumWidth: 100
 
@@ -149,8 +161,9 @@ Item {
                         }
 
                         MouseArea {
-                            Layout.fillWidth: true
-                            Layout.fillHeight: true
+                            id: profileHover
+                            anchors.fill: parent
+                            hoverEnabled: true
                             cursorShape: Qt.PointingHandCursor
                             onClicked: root.showingProfile = !root.showingProfile
                         }
@@ -275,7 +288,7 @@ Item {
 
                     Loader {
                         id: profileLoader
-                        active: false
+                        active: Config.ready && (root.showingProfile || item !== null)
                         anchors.fill: parent
                         source: Qt.resolvedUrl("pages/Profile.qml")
 

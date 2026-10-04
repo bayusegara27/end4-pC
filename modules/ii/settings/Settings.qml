@@ -135,10 +135,16 @@ Scope {
             }
         }
 
+            MouseArea {
+                anchors.fill: parent
+                // Absorb unhandled clicks inside window so they do not fall through to backdrop
+            }
+
             Rectangle {
                 id: dragHandle
                 anchors.top: parent.top
                 anchors.left: parent.left
+                anchors.leftMargin: isMinimal ? 70 : 210
                 anchors.right: parent.right
                 height: 32
                 color: "transparent"
@@ -168,7 +174,11 @@ Scope {
         function close(): void  { GlobalStates.settingsOpen = false; }
         function page(pageName: string): void {
             GlobalStates.settingsOpen = true;
-            GlobalStates.settingsPage = pageName;
+            if (pageName === "profile") {
+                settingsContent.showingProfile = true;
+            } else {
+                GlobalStates.settingsTarget = { page: pageName };
+            }
         }
     }
 
