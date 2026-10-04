@@ -246,8 +246,8 @@ AbstractBackgroundWidget {
                     Layout.topMargin: 4
                     Layout.bottomMargin: 4
                     implicitWidth: 1
-                    color: Appearance.colors.colOutlineVariant
-                    opacity: 0.25
+                    color: Appearance.colors.colOnPrimaryContainer
+                    opacity: 0.15
                 }
 
                 // Right member list
@@ -488,8 +488,8 @@ AbstractBackgroundWidget {
                 Rectangle {
                     Layout.fillWidth: true
                     Layout.preferredHeight: 1
-                    color: Appearance.colors.colOutlineVariant
-                    opacity: 0.3
+                    color: Appearance.colors.colOnPrimaryContainer
+                    opacity: 0.15
                     visible: root.inChannel
                 }
 

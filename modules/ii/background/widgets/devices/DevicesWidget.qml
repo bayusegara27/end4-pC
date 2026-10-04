@@ -387,8 +387,8 @@ AbstractBackgroundWidget {
             Rectangle {
                 Layout.fillWidth: true
                 implicitHeight: 1
-                color: Appearance.colors.colOutlineVariant
-                opacity: 0.25
+                color: Appearance.colors.colOnPrimaryContainer
+                opacity: 0.15
             }
 
             Repeater {
@@ -470,8 +470,8 @@ AbstractBackgroundWidget {
             Rectangle {
                 Layout.fillWidth: true
                 implicitHeight: 1
-                color: Appearance.colors.colOutlineVariant
-                opacity: 0.25
+                color: Appearance.colors.colOnPrimaryContainer
+                opacity: 0.15
             }
 
             RowLayout {

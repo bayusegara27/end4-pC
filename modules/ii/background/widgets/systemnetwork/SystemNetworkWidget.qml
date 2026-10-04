@@ -296,8 +296,8 @@ AbstractBackgroundWidget {
             Rectangle {
                 Layout.fillWidth: true
                 implicitHeight: 1
-                color: Appearance.colors.colOutlineVariant
-                opacity: 0.25
+                color: Appearance.colors.colOnPrimaryContainer
+                opacity: 0.15
             }
 
             // CPU Row
@@ -397,8 +397,8 @@ AbstractBackgroundWidget {
             Rectangle {
                 Layout.fillWidth: true
                 implicitHeight: 1
-                color: Appearance.colors.colOutlineVariant
-                opacity: 0.25
+                color: Appearance.colors.colOnPrimaryContainer
+                opacity: 0.15
             }
 
             RowLayout {
@@ -454,8 +454,8 @@ AbstractBackgroundWidget {
                 Rectangle {
                     Layout.fillHeight: true
                     implicitWidth: 1
-                    color: Appearance.colors.colOutlineVariant
-                    opacity: 0.25
+                    color: Appearance.colors.colOnPrimaryContainer
+                    opacity: 0.15
                 }
 
                 // Right: Download & Upload Speed
@@ -535,8 +535,8 @@ AbstractBackgroundWidget {
             Rectangle {
                 Layout.fillWidth: true
                 implicitHeight: 1
-                color: Appearance.colors.colOutlineVariant
-                opacity: 0.3
+                color: Appearance.colors.colOnPrimaryContainer
+                opacity: 0.15
             }
 
             // Content: RowLayout
@@ -662,8 +662,8 @@ AbstractBackgroundWidget {
                     Layout.topMargin: 2
                     Layout.bottomMargin: 2
                     implicitWidth: 1
-                    color: Appearance.colors.colOutlineVariant
-                    opacity: 0.3
+                    color: Appearance.colors.colOnPrimaryContainer
+                    opacity: 0.15
                 }
 
                 // Right Column (Network)
@@ -752,8 +752,8 @@ AbstractBackgroundWidget {
                     Rectangle {
                         Layout.fillWidth: true
                         implicitHeight: 1
-                        color: Appearance.colors.colOutlineVariant
-                        opacity: 0.25
+                        color: Appearance.colors.colOnPrimaryContainer
+                        opacity: 0.15
                     }
 
                     Item { Layout.fillHeight: true }

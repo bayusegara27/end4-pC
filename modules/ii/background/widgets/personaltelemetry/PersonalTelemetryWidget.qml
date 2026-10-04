@@ -233,8 +233,8 @@ AbstractBackgroundWidget {
             Rectangle {
                 Layout.fillWidth: true
                 implicitHeight: 1
-                color: Appearance.colors.colOutlineVariant
-                opacity: 0.25
+                color: Appearance.colors.colOnPrimaryContainer
+                opacity: 0.15
             }
 
             RowLayout {
@@ -329,8 +329,8 @@ AbstractBackgroundWidget {
             Rectangle {
                 Layout.fillWidth: true
                 implicitHeight: 1
-                color: Appearance.colors.colOutlineVariant
-                opacity: 0.25
+                color: Appearance.colors.colOnPrimaryContainer
+                opacity: 0.15
             }
 
             RowLayout {
@@ -474,8 +474,8 @@ AbstractBackgroundWidget {
             Rectangle {
                 Layout.fillWidth: true
                 implicitHeight: 1
-                color: Appearance.colors.colOutlineVariant
-                opacity: 0.3
+                color: Appearance.colors.colOnPrimaryContainer
+                opacity: 0.15
             }
 
             // Top Stats Row
@@ -522,8 +522,8 @@ AbstractBackgroundWidget {
                     Layout.alignment: Qt.AlignVCenter
                     implicitWidth: 1
                     implicitHeight: 44
-                    color: Appearance.colors.colOutlineVariant
-                    opacity: 0.3
+                    color: Appearance.colors.colOnPrimaryContainer
+                    opacity: 0.15
                 }
 
                 // Column 2: Steps
@@ -564,8 +564,8 @@ AbstractBackgroundWidget {
                     Layout.alignment: Qt.AlignVCenter
                     implicitWidth: 1
                     implicitHeight: 44
-                    color: Appearance.colors.colOutlineVariant
-                    opacity: 0.3
+                    color: Appearance.colors.colOnPrimaryContainer
+                    opacity: 0.15
                 }
 
                 // Column 3: Sleep
