@@ -17,6 +17,9 @@ Item {
     property color indicatorColor: Appearance.colors.colPrimaryContainer
     property color indicatorShapeColor: Appearance.colors.colOnPrimaryContainer
     property int textAlignment: Text.AlignLeft
+    property real fontScale: 1.0
+    property bool animateTransitions: false
+    property real lineSpacing: 10
 
     implicitWidth: 200
     implicitHeight: 200
@@ -76,7 +79,7 @@ Item {
             Layout.fillHeight: true
             visible: LyricsService.status === "ok"
             clip: true
-            spacing: 10
+            spacing: root.lineSpacing
             model: LyricsService.lyricsLines
             currentIndex: LyricsService.activeIndex
             
@@ -97,9 +100,9 @@ Item {
                 readonly property int dist: Math.abs(index - ListView.view.currentIndex)
                 
                 property real targetSize: {
-                    if (dist === 0) return Appearance.font.pixelSize.large * 1.05
-                    if (dist === 1) return Appearance.font.pixelSize.normal
-                    return Appearance.font.pixelSize.small
+                    if (dist === 0) return Appearance.font.pixelSize.large * 1.05 * root.fontScale
+                    if (dist === 1) return Appearance.font.pixelSize.normal * root.fontScale
+                    return Appearance.font.pixelSize.small * root.fontScale
                 }
                 Behavior on targetSize { NumberAnimation { duration: 500; easing.type: Easing.OutQuart } }
                 font.pixelSize: targetSize
