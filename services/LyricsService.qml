@@ -228,11 +228,23 @@ Singleton {
         procRestartTimer.restart()
     }
 
+    Timer {
+        id: restartDebounce
+        interval: 150
+        onTriggered: root.restartLyrics()
+    }
+
+    onActivePlayerChanged: restartDebounce.restart()
+
     Connections {
         target: root.activePlayer
         function onTrackTitleChanged() { 
             root.timingOffset = 0.0
             root.restartLyrics() 
+        }
+        function onTrackArtistChanged() { 
+            root.timingOffset = 0.0
+            restartDebounce.restart() 
         }
         function onPlaybackStateChanged() { root.resync() }
     }

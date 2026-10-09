@@ -82,7 +82,7 @@ QtObject {
     })
 
     readonly property var custom: ({
-        "bar:Bar style": { type: "select", get: () => Config.options.bar.cornerStyle, set: v => { Config.options.bar.cornerStyle = v; }, options: [{ displayName: Translation.tr("Hug"), icon: "line_curve", value: 0 }, { displayName: Translation.tr("Float"), icon: "view_day", value: 1 }, { displayName: Translation.tr("Islands"), icon: "crop_3_2", value: 2 }, { displayName: Translation.tr("M3"), icon: "interests", value: 3 }, { displayName: Translation.tr("M3 Hug"), icon: "category", value: 4 }, { displayName: Translation.tr("Panel"), icon: "toolbar", value: 5 }] },
+        "bar:Bar style": { type: "select", get: () => Config.options.bar.cornerStyle, set: v => { Config.options.bar.cornerStyle = v; }, options: [{ displayName: Translation.tr("Hug"), icon: "line_curve", value: 0 }, { displayName: Translation.tr("Split Hug"), icon: "splitscreen", value: 6 }, { displayName: Translation.tr("Float"), icon: "view_day", value: 1 }, { displayName: Translation.tr("Islands"), icon: "crop_3_2", value: 2 }, { displayName: Translation.tr("M3"), icon: "interests", value: 3 }, { displayName: Translation.tr("M3 Hug"), icon: "category", value: 4 }, { displayName: Translation.tr("Panel"), icon: "toolbar", value: 5 }] },
         "bar:Group color": { type: "select", get: () => Config.options.bar.groupColor, set: v => { Config.options.bar.groupColor = v; }, get options() { return ["primaryContainer", "secondaryContainer", "tertiaryContainer", "layer1", "layer0"].map(name => ({ value: name, color: roleColor(name) })); } },
         "bar:Frame color": { type: "select", get: () => Config.options.bar.frameColor, set: v => { Config.options.bar.frameColor = v; }, get options() { return ["primaryContainer", "secondaryContainer", "tertiaryContainer", "layer0", "black"].map(name => ({ value: name, color: roleColor(name) })); } },
         "bar:Screen rounded corners": { type: "select", get: () => Config.options.appearance.fakeScreenRounding, set: v => { Config.options.appearance.fakeScreenRounding = v; }, options: [{ displayName: Translation.tr("No"), icon: "close", value: 0 }, { displayName: Translation.tr("Yes"), icon: "check", value: 1 }, { displayName: Translation.tr("When not fullscreen"), icon: "fullscreen_exit", value: 2 }] },
@@ -92,6 +92,10 @@ QtObject {
         "bar:Icon color": { type: "select", get: () => Config.options.custom.iconColor, set: v => { Config.options.custom.iconColor = v; }, get options() { return ["onLayer0", "primary", "secondary", "tertiary", "onPrimaryContainer", "onSecondaryContainer", "onTertiaryContainer"].map(name => ({ value: name, color: roleColor(name) })); } },
         "bar:Icons folder": { type: "text", get: () => Config.options.custom.iconsPath, set: v => { Config.options.custom.iconsPath = v; } },
         "bar:Preferred player": { type: "text", get: () => Config.options.bar.media.preferredPlayer, set: v => { Config.options.bar.media.preferredPlayer = v; } },
+        "hyprland:Active border color": { type: "select", get: () => Config.options.hyprland.general.borderColor.activeRole, set: v => { Config.options.hyprland.general.borderColor.activeRole = v; HyprlandConfig.applyBorderColors(); }, get options() { return ["primary", "secondary", "tertiary", "primaryContainer", "secondaryContainer", "tertiaryContainer", "layer0Border"].map(name => ({ value: name, color: roleColor(name) })); } },
+        "hyprland:Active border opacity": { type: "spin", get: () => Math.round(Config.options.hyprland.general.borderColor.activeOpacity * 100), set: v => { Config.options.hyprland.general.borderColor.activeOpacity = v / 100.0; HyprlandConfig.applyBorderColors(); }, from: 0, to: 100, stepSize: 5 },
+        "hyprland:Inactive border color": { type: "select", get: () => Config.options.hyprland.general.borderColor.inactiveRole, set: v => { Config.options.hyprland.general.borderColor.inactiveRole = v; HyprlandConfig.applyBorderColors(); }, get options() { return ["primary", "secondary", "tertiary", "primaryContainer", "secondaryContainer", "tertiaryContainer", "layer0Border"].map(name => ({ value: name, color: roleColor(name) })); } },
+        "hyprland:Inactive border opacity": { type: "spin", get: () => Math.round(Config.options.hyprland.general.borderColor.inactiveOpacity * 100), set: v => { Config.options.hyprland.general.borderColor.inactiveOpacity = v / 100.0; HyprlandConfig.applyBorderColors(); }, from: 0, to: 100, stepSize: 5 },
         "hyprland:Idle lock": { type: "duration", get: () => Config.options.hyprland.idle.lock, set: v => { Config.options.hyprland.idle.lock = v; HyprlandConfig.setIdle(Config.options.hyprland.idle.lock, Config.options.hyprland.idle.screenOff, Config.options.hyprland.idle.suspend); } },
         "hyprland:Idle screen off": { type: "duration", get: () => Config.options.hyprland.idle.screenOff, set: v => { Config.options.hyprland.idle.screenOff = v; HyprlandConfig.setIdle(Config.options.hyprland.idle.lock, Config.options.hyprland.idle.screenOff, Config.options.hyprland.idle.suspend); } },
         "hyprland:Idle standby": { type: "duration", get: () => Config.options.hyprland.idle.suspend, set: v => { Config.options.hyprland.idle.suspend = v; HyprlandConfig.setIdle(Config.options.hyprland.idle.lock, Config.options.hyprland.idle.screenOff, Config.options.hyprland.idle.suspend); } },
@@ -106,11 +110,13 @@ QtObject {
         "interface:Dock/Border": { type: "switch", get: () => Config.options.dock.showBorder, set: v => { Config.options.dock.showBorder = v; } },
         "interface:Dock/Border width": { type: "spin", get: () => Config.options.dock.borderWidth, set: v => { Config.options.dock.borderWidth = v; }, from: 1, to: 10, stepSize: 1 },
         "interface:Dock/Border color": { type: "select", get: () => Config.options.dock.borderColor, set: v => { Config.options.dock.borderColor = v; }, get options() { return ["layer0Border", "primary", "secondary", "tertiary", "primaryContainer", "secondaryContainer", "tertiaryContainer", "layer1", "black"].map(name => ({ value: name, color: roleColor(name) })); } },
+        "interface:UI background": { type: "select", get: () => Config.options.appearance.uiBackground, set: v => { Config.options.appearance.uiBackground = v; }, options: [{ displayName: Translation.tr("Themed"), icon: "palette", value: "themed" }, { displayName: "OLED", icon: "contrast", value: "oled" }] },
         "interface:Palette type": { type: "select", get: () => Config.options.appearance.palette.type, set: v => { Config.options.appearance.palette.type = v; Quickshell.execDetached(["bash", "-c", `${Directories.wallpaperSwitchScriptPath} --noswitch`]); }, options: [{ displayName: Translation.tr("Auto"), icon: "auto_awesome", value: "auto" }, { displayName: Translation.tr("Content"), icon: "image", value: "scheme-content" }, { displayName: Translation.tr("Expressive"), icon: "palette", value: "scheme-expressive" }, { displayName: Translation.tr("Fidelity"), icon: "equal", value: "scheme-fidelity" }, { displayName: Translation.tr("Fruit Salad"), icon: "nutrition", value: "scheme-fruit-salad" }, { displayName: Translation.tr("Monochrome"), icon: "invert_colors", value: "scheme-monochrome" }, { displayName: Translation.tr("Neutral"), icon: "tonality", value: "scheme-neutral" }, { displayName: Translation.tr("Rainbow"), icon: "gradient", value: "scheme-rainbow" }, { displayName: Translation.tr("Tonal Spot"), icon: "lens", value: "scheme-tonal-spot" }] },
         "desktop:Same wallpaper": { type: "switch", get: () => Config.options.background.lockWall === "", set: v => { if (v) Config.options.background.lockWall = ""; } },
         "desktop:Transitions": { type: "select", get: () => Config.options.background.wallpaperAnimation, set: v => { Config.options.background.wallpaperAnimation = v; }, options: [{ displayName: Translation.tr("None"), icon: "block", value: "" }, { displayName: Translation.tr("Circle"), icon: "circle", value: "circleSelect" }, { displayName: Translation.tr("Circle Pit"), icon: "blur_circular", value: "circlePit" }, { displayName: Translation.tr("Magic"), icon: "auto_awesome", value: "magic" }, { displayName: Translation.tr("Doom"), icon: "whatshot", value: "Doom" }, { displayName: Translation.tr("Peel"), icon: "layers", value: "Peel" }, { displayName: Translation.tr("Fade"), icon: "gradient", value: "transition" }, { displayName: Translation.tr("Pixelate"), icon: "grain", value: "pixelate" }, { displayName: Translation.tr("Stripes"), icon: "texture_minus", value: "stripes" }, { displayName: Translation.tr("CRT"), icon: "tv", value: "crt" }, { displayName: Translation.tr("Dissolve"), icon: "blur_on", value: "dissolve" }, { displayName: Translation.tr("Glitch"), icon: "bug_report", value: "glitch" }, { displayName: Translation.tr("Ripple"), icon: "water", value: "ripple" }, { displayName: Translation.tr("Shatter"), icon: "broken_image", value: "shatter" }, { displayName: Translation.tr("Random"), icon: "shuffle", value: "random" }] },
         "desktop:Centered shape": { type: "select", get: () => Config.options.background.centeredWallpaperShape, set: v => { Config.options.background.centeredWallpaperShape = v; }, options: ["Circle", "Square", "Slanted", "Arch", "Arrow", "SemiCircle", "Oval", "Pill", "Triangle", "Diamond", "ClamShell", "Pentagon", "Gem", "Sunny", "VerySunny", "Cookie4Sided", "Cookie6Sided", "Cookie7Sided", "Cookie9Sided", "Cookie12Sided", "Ghostish", "Clover4Leaf", "Clover8Leaf", "Burst", "SoftBurst", "Flower", "Puffy", "PuffyDiamond", "PixelCircle", "Bun", "Heart"] },
         "desktop:Image shape": { type: "select", get: () => Config.options.background.widgets.customImage.shape, set: v => { Config.options.background.widgets.customImage.shape = v; }, options: ["Circle", "Square", "Slanted", "Arch", "Arrow", "SemiCircle", "Oval", "Pill", "Triangle", "Diamond", "ClamShell", "Pentagon", "Gem", "Sunny", "VerySunny", "Cookie4Sided", "Cookie6Sided", "Cookie7Sided", "Cookie9Sided", "Cookie12Sided", "Ghostish", "Clover4Leaf", "Clover8Leaf", "Burst", "SoftBurst", "Flower", "Puffy", "PuffyDiamond", "PixelCircle", "Bun", "Heart"] },
+        "desktop:Image card layout": { type: "select", get: () => Config.options.background.widgets.imageCard.sizeMode, set: v => { Config.options.background.widgets.imageCard.sizeMode = v; }, options: [ { displayName: "1x1", icon: "crop_square", value: "1x1" }, { displayName: "1x2", icon: "crop_landscape", value: "1x2" }, { displayName: "1x3", icon: "crop_16_9", value: "1x3" }, { displayName: "2x2", icon: "grid_view", value: "2x2" }, { displayName: "2x3", icon: "view_module", value: "2x3" }] },
         "desktop:Centered color": { type: "select", get: () => Config.options.background.centeredWallpaperColor, set: v => { Config.options.background.centeredWallpaperColor = v; }, get options() { return ["primary", "secondary", "tertiary", "primaryContainer", "secondaryContainer", "tertiaryContainer", "layer1", "layer0"].map(name => ({ value: name, color: Appearance.getColorFromName(name) })); } },
         "desktop:Collage enable": { type: "switch", get: () => Config.options.background.collage.enable, set: v => { if (v && !Config.options.background.collage.enable) Collage.reset(); Config.options.background.collage.enable = v; } },
         "desktop:Collage gap": { type: "spin", get: () => Config.options.background.collage.gap, set: v => { Config.options.background.collage.gap = v; }, from: 0, to: 80, stepSize: 2 },
@@ -413,6 +419,7 @@ QtObject {
         {
             page: Translation.tr("Desktop"), title: Translation.tr("Multiple wallpapers"), icon: "grid_view", cards: [
                 { type: "toggle", key: "desktop:Collage enable", title: Translation.tr("Enable"), icon: "grid_view" },
+                { type: "collagelayouts", key: "desktop:Collage layouts", title: Translation.tr("Layouts"), icon: "dashboard_customize", kw: "collage multiple wallpapers layout preset grid mosaic" },
                 { type: "spin", key: "desktop:Collage gap", title: Translation.tr("Spacing"), icon: "space_bar" },
                 { type: "spin", key: "desktop:Collage margin", title: Translation.tr("Outer margin"), icon: "padding" },
                 { type: "spin", key: "desktop:Collage radius", title: Translation.tr("Corner radius"), icon: "rounded_corner" }
@@ -433,7 +440,7 @@ QtObject {
             ]
         },
         {
-            page: Translation.tr("Desktop"), title: Translation.tr("Digital clock"), icon: "timer_10", cards: [
+            page: Translation.tr("Desktop"), title: Translation.tr("Digital clock"), when: "clockdigital", icon: "timer_10", cards: [
                 { type: "toggle", key: "desktop:Vertical", title: Translation.tr("Vertical"), icon: "vertical_align_center" },
                 { type: "toggle", key: "desktop:Animate time change", title: Translation.tr("Animate change"), icon: "animation" },
                 { type: "toggle", key: "desktop:Show date", title: Translation.tr("Show date"), icon: "calendar_today" },
@@ -448,7 +455,7 @@ QtObject {
             ]
         },
         {
-            page: Translation.tr("Desktop"), title: Translation.tr("Cookie clock"), icon: "cookie", cards: [
+            page: Translation.tr("Desktop"), title: Translation.tr("Cookie clock"), when: "clockcookie", icon: "cookie", cards: [
                 { type: "toggle", key: "desktop:Auto styling with Gemini", title: Translation.tr("Auto styling (Gemini)"), icon: "auto_awesome" },
                 { type: "toggle", key: "desktop:Use old sine wave cookie implementation", title: Translation.tr("Old sine cookie"), icon: "waves" },
                 { type: "toggle", key: "desktop:Constantly rotate", title: Translation.tr("Constantly rotate"), icon: "autorenew" },
@@ -463,7 +470,7 @@ QtObject {
             ]
         },
         {
-            page: Translation.tr("Desktop"), title: Translation.tr("Pixel clock"), icon: "grid_view", cards: [
+            page: Translation.tr("Desktop"), title: Translation.tr("Pixel clock"), when: "clockpixel", icon: "grid_view", cards: [
                 { type: "select", key: "desktop:Pixel clock orientation", title: Translation.tr("Orientation"), icon: "screen_rotation" }
             ]
         },
@@ -476,8 +483,10 @@ QtObject {
         },
         {
             page: Translation.tr("Desktop"), title: Translation.tr("Custom image"), icon: "imagesmode", cards: [
-                { type: "toggle", key: "desktop:Custom Image/Enable", title: Translation.tr("Enable"), icon: "imagesmode" },
-                { type: "shape", key: "desktop:Image shape", title: Translation.tr("Shape"), icon: "shapes" }
+                { type: "toggle", key: "desktop:Custom Image/Enable", keepOrder: true, title: Translation.tr("Enable"), icon: "imagesmode" },
+                { type: "shape", key: "desktop:Image shape", title: Translation.tr("Shape"), icon: "shapes" },
+                { type: "toggle", key: "desktop:Image card/Enable", title: Translation.tr("Image card"), icon: "photo_size_select_large" },
+                { type: "select", key: "desktop:Image card layout", title: Translation.tr("Image card layout"), icon: "grid_view" }
             ]
         },
         {
@@ -522,9 +531,10 @@ QtObject {
         },
         {
             page: Translation.tr("General"), title: Translation.tr("Time"), icon: "nest_clock_farsight_analog", cards: [
-                { type: "select", key: "general:Format", title: Translation.tr("Time format"), icon: "schedule", kw: "clock 24h 12h" },
+                { type: "timepreview", key: "general:Time preview", title: Translation.tr("Preview"), icon: "schedule", kw: "clock time preview" },
                 { type: "toggle", key: "general:Second precision", title: Translation.tr("Second precision"), icon: "pace" },
-                { type: "toggle", key: "general:Show date", title: Translation.tr("Show date"), icon: "date_range" }
+                { type: "toggle", key: "general:Show date", title: Translation.tr("Show date"), icon: "date_range" },
+                { type: "select", w: 4, key: "general:Format", title: Translation.tr("Time format"), icon: "schedule", kw: "clock 24h 12h" }
             ]
         },
         {
@@ -567,7 +577,7 @@ QtObject {
             ]
         },
         {
-            page: Translation.tr("Hyprland"), title: Translation.tr("Dwindle"), icon: "browse", when: "hyprland", cards: [
+            page: Translation.tr("Hyprland"), title: Translation.tr("Dwindle"), icon: "browse", when: "layoutdwindle", cards: [
                 { type: "toggle", key: "hyprland:opt:dwindle:preserve_split", title: Translation.tr("Preserve split direction"), icon: "call_split" },
                 { type: "toggle", key: "hyprland:opt:dwindle:smart_split", title: Translation.tr("Smart split (follow cursor)"), icon: "smart_toy" },
                 { type: "select", key: "hyprland:opt:dwindle:force_split", title: Translation.tr("Force split side"), icon: "splitscreen" },
@@ -575,7 +585,7 @@ QtObject {
             ]
         },
         {
-            page: Translation.tr("Hyprland"), title: Translation.tr("Master"), icon: "auto_awesome_mosaic", when: "hyprland", cards: [
+            page: Translation.tr("Hyprland"), title: Translation.tr("Master"), icon: "auto_awesome_mosaic", when: "layoutmaster", cards: [
                 { type: "select", key: "hyprland:opt:master:new_status", title: Translation.tr("New windows become"), icon: "add_box" },
                 { type: "select", key: "hyprland:opt:master:orientation", title: Translation.tr("Master position"), icon: "screen_rotation" },
                 { type: "spin", key: "hyprland:opt:master:mfact", title: Translation.tr("Master size"), icon: "aspect_ratio" }
@@ -625,6 +635,14 @@ QtObject {
                 { type: "spin", key: "hyprland:Active Opacity", title: Translation.tr("Active opacity"), icon: "opacity" },
                 { type: "spin", key: "hyprland:Inactive Opacity", title: Translation.tr("Inactive opacity"), icon: "opacity" },
                 { type: "toggle", key: "hyprland:Custom border colors", title: Translation.tr("Custom border colors"), icon: "format_paint" }
+            ]
+        },
+        {
+            page: Translation.tr("Hyprland"), title: Translation.tr("Border colors"), icon: "border_color", when: "hyprbordercolor", cards: [
+                { type: "swatch", w: 2, key: "hyprland:Active border color", title: Translation.tr("Active border"), icon: "border_color" },
+                { type: "swatch", w: 2, key: "hyprland:Inactive border color", title: Translation.tr("Inactive border"), icon: "border_color" },
+                { type: "spin", key: "hyprland:Active border opacity", title: Translation.tr("Active border opacity"), icon: "opacity" },
+                { type: "spin", key: "hyprland:Inactive border opacity", title: Translation.tr("Inactive border opacity"), icon: "opacity" }
             ]
         },
         {

@@ -21,11 +21,12 @@ Singleton {
         { key: "timers",      icon: "timer",             name: Translation.tr("Timers") },
         { key: "images",      icon: "photo_library",     name: Translation.tr("Image Converter") },
         { key: "customImage", icon: "image",             name: Translation.tr("Custom Image") },
+        { key: "imageCard",         icon: "photo_size_select_large", name: Translation.tr("Image Card") },
         { key: "sticker",           icon: "sticker",           name: Translation.tr("Sticker") },
         { key: "personalTelemetry", icon: "vital_signs",       name: Translation.tr("Personal Telemetry") },
         { key: "devices",           icon: "devices_other",     name: Translation.tr("Devices") },
         { key: "systemNetwork",     icon: "monitoring",        name: Translation.tr("System / Network") },
-        { key: "discordVoice",      icon: "headset",           name: Translation.tr("Discord Voice") }
+        { key: "discordVoice",      icon: "headset",           name: Translation.tr("Discord Voice") },
     ]
 
     readonly property var hidden: Array.from(Config.options.background.widgets.menuHidden)

@@ -255,6 +255,7 @@ ContentPage {
                     onSelected: newValue => { Config.options.bar.cornerStyle = newValue; }
                     options: [
                         { displayName: Translation.tr("Hug"),     icon: "line_curve", value: 0 },
+                        { displayName: Translation.tr("Split Hug"), icon: "splitscreen", value: 6 },
                         { displayName: Translation.tr("Float"),   icon: "view_day",   value: 1 },
                         { displayName: Translation.tr("Islands"), icon: "crop_3_2",   value: 2 },
                         { displayName: Translation.tr("M3"), icon: "interests",   value: 3 },
@@ -808,7 +809,8 @@ ContentPage {
                     onSelected: newValue => { Config.options.bar.resources.style = newValue; }
                     options: [
                         { displayName: Translation.tr("Filled"),    icon: "incomplete_circle",  value: "filled" },
-                        { displayName: Translation.tr("Outline"),   icon: "circles",            value: "outline" }
+                        { displayName: Translation.tr("Outline"),   icon: "circles",            value: "outline" },
+                        { displayName: Translation.tr("Text"),      icon: "text_fields",        value: "text" }
                     ]
                 }
                 ConfigSwitch {
@@ -895,6 +897,17 @@ ContentPage {
                     checked: Config.options.bar.tooltips.clickToShow
                     onCheckedChanged: { Config.options.bar.tooltips.clickToShow = checked; }
                     enabled: Config.options.bar.tooltips.enable
+                }
+                ConfigSelectionArray {
+                    text: Translation.tr("Style")
+                    icon: "tooltip"
+                    enabled: Config.options.bar.tooltips.enable
+                    currentValue: Config.options.bar.tooltips.style
+                    onSelected: newValue => { Config.options.bar.tooltips.style = newValue }
+                    options: [
+                        { displayName: Translation.tr("Default"), icon: "tooltip", value: "default" },
+                        { displayName: Translation.tr("Morph"), icon: "join_inner", value: "morph" }
+                    ]
                 }
             }
         }

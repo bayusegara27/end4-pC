@@ -53,7 +53,7 @@ Item {
     readonly property int columns: Math.max(2, Math.round(width / 340))
 
     readonly property var barPositions: [Translation.tr("Top"), Translation.tr("Bottom"), Translation.tr("Left"), Translation.tr("Right")]
-    readonly property var barStyles: ["Hug", "Float", "Islands", "M3", "M3 Hug", "Panel"]
+    readonly property var barStyles: ["Hug", "Float", "Islands", "M3", "M3 Hug", "Panel", "Split Hug"]
 
     function summaryOf(data) {
         const bar = data?.bar ?? {};
@@ -339,7 +339,7 @@ Item {
             clip: true
             boundsBehavior: Flickable.StopAtBounds
             cellWidth: Math.floor(width / root.columns)
-            cellHeight: Math.round(cellWidth * 0.68)
+            cellHeight: Math.max(120, Math.floor(height / 2))
             cacheBuffer: 0
             model: root.source === "online" ? [] : root.localEntries
 
@@ -503,7 +503,7 @@ Item {
                 clip: true
                 boundsBehavior: Flickable.StopAtBounds
                 cellWidth: Math.floor(width / root.columns)
-                cellHeight: Math.round(cellWidth * 0.68)
+                cellHeight: Math.max(120, Math.floor(height / 2))
                 cacheBuffer: 0
                 model: root.source === "online" ? root.onlineEntries : []
 
@@ -565,16 +565,26 @@ Item {
                                 }
                             }
 
-                            StyledText {
+                            ColumnLayout {
                                 anchors.left: parent.left
                                 anchors.right: parent.right
                                 anchors.bottom: parent.bottom
                                 anchors.margins: 14
-                                text: onlineCell.modelData.title
-                                font.pixelSize: Appearance.font.pixelSize.larger
-                                font.weight: Font.DemiBold
-                                color: "white"
-                                elide: Text.ElideRight
+                                spacing: 4
+
+                                StyledText {
+                                    Layout.fillWidth: true
+                                    text: onlineCell.modelData.title
+                                    font.pixelSize: Appearance.font.pixelSize.larger
+                                    font.weight: Font.DemiBold
+                                    color: "white"
+                                    elide: Text.ElideRight
+                                }
+
+                                PresetAuthorChip {
+                                    Layout.fillWidth: true
+                                    author: onlineCell.modelData.author ?? ""
+                                }
                             }
 
                             MouseArea {
@@ -688,6 +698,7 @@ Item {
         id: detailLoader
         anchors.fill: parent
         active: root.selected !== null
+        visible: !Presets.uploadGuideOpen
 
         sourceComponent: DashboardPresetDetail {
             preset: root.selected
@@ -700,12 +711,33 @@ Item {
             }
             onOverwriteRequested: Presets.overwrite(root.selected.name)
             onExportRequested: Presets.exportZip(root.selected.name)
+            onRenameRequested: newName => Presets.rename(root.selected.name, newName)
             onUploadRequested: Presets.publish(root.selected.name)
+            onUnshareRequested: Presets.unpublish(root.selected.name)
             onInstallRequested: Presets.install(root.selected.name, root.selected.source)
             onDeleteRequested: {
                 root.removePreset(root.selected);
                 root.back();
             }
+        }
+    }
+
+    Loader {
+        anchors.fill: parent
+        active: Presets.uploadGuideOpen
+
+        sourceComponent: DashboardPresetUploadGuide {
+            presetName: Presets.uploadGuideName
+            onProceed: Presets.confirmUploadGuide()
+            onCancel: Presets.cancelUploadGuide()
+        }
+    }
+
+    Connections {
+        target: Presets
+        function onRenamed(oldName, newName) {
+            if (newName === "" || root.selected === null || root.selected.name !== oldName) return;
+            root.selected = Object.assign({}, root.selected, { name: newName });
         }
     }
 

@@ -4,6 +4,7 @@
 #   presets.sh --save <name> [description]
 #   presets.sh --remove <name> [--online]
 #   presets.sh --apply <name> [--online]
+#   presets.sh --rename <name> <new_name>
 #   presets.sh --export-zip <name>
 #   presets.sh --import-zip <zip_path>
 
@@ -27,7 +28,11 @@ BLACKLIST_FILTER='del(._presetMeta)
   | del(.ai, .networking, .musicRecognition, .search, .screenRecord, .screenSnip, .updates)
   | del(.bar.weather)
   | del(.appearance.fonts)
-  | del(.hyprland.input, .hyprland.autostartApps, .hyprland.general.layout)'
+  | del(.profile.onlinePresets, .profile.uploadGuideSeen)
+  | del(.hyprland.input, .hyprland.autostartApps, .hyprland.general.layout)
+  | del(.dock.pinnedApps, .launcher.pinnedApps, .tray.pinnedItems)
+  | del(.sidebar.booru, .wallpaperSelector.userPath)
+  | walk(if type == "object" then with_entries(select(.key | test("^(.*api[-_]?key|secret|password|token|username|e-?mail)$"; "i") | not)) else . end)'
 
 SHARE_FILTER='with_entries(select(.key as $k | ["appearance","background","bar","calendar","crosshair","dock","interactions","launcher","light","lock","media","notifications","osd","osk","overlay","overview","panelFamily","profile","regionSelector","resources","settings","sidebar","tray","wallpaperSelector","windows","hyprland"] | index($k)))
   | if (.hyprland | type) == "object" then .hyprland |= with_entries(select(.key as $k | ["decoration","gaps","animations","general"] | index($k))) else . end'
@@ -148,6 +153,14 @@ case "$action" in
         elif $imported; then
             rm -rf "$IMPORTED_PRESETS_DIR/assets/${name}"
         fi
+        ;;
+    --rename)
+        new_name="${description//[[:space:]]/_}"
+        if [ -z "$new_name" ] || [ ! -f "$PRESETS_DIR/${name}.json" ] || [ -e "$PRESETS_DIR/${new_name}.json" ]; then
+            exit 1
+        fi
+        mv "$PRESETS_DIR/${name}.json" "$PRESETS_DIR/${new_name}.json"
+        echo "$new_name"
         ;;
     --apply)
         preset_file="$PRESETS_DIR/${name}.json"

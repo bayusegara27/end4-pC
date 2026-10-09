@@ -169,6 +169,7 @@ Singleton {
         "desktop:Clock/Quote/Enable": root.optionSwitch("background.widgets.clock.quote.enable"),
         "desktop:Follow Clock Font": root.optionSwitch("background.widgets.clock.quote.followClock"),
         "desktop:Custom Image/Enable": root.optionSwitch("background.widgets.customImage.enable"),
+        "desktop:Image card/Enable": root.optionSwitch("background.widgets.imageCard.enable"),
         "desktop:Show alignment grid while dragging": root.optionSwitch("background.showGrid"),
         "desktop:Show snap lines when dropping": root.optionSwitch("background.showSnapLines"),
 
@@ -299,6 +300,10 @@ Singleton {
         "bar:Show only title": root.optionSwitch("bar.media.onlyTitle"),
         "bar:Tooltips/Enable": root.optionSwitch("bar.tooltips.enable"),
         "bar:Click to show": root.optionSwitch("bar.tooltips.clickToShow"),
+        "bar:Tooltips/Style": root.optionSelect("bar.tooltips.style", [
+            { displayName: Translation.tr("Default"), icon: "tooltip", value: "default" },
+            { displayName: Translation.tr("Morph"), icon: "join_inner", value: "morph" }
+        ]),
         "bar:Show Frame": root.toggle(
             () => Config.options.bar.showFrame,
             value => {
@@ -350,7 +355,8 @@ Singleton {
         ]),
         "bar:Resources/Style": root.optionSelect("bar.resources.style", [
             { displayName: Translation.tr("Filled"), icon: "incomplete_circle", value: "filled" },
-            { displayName: Translation.tr("Outline"), icon: "circles", value: "outline" }
+            { displayName: Translation.tr("Outline"), icon: "circles", value: "outline" },
+            { displayName: Translation.tr("Text"), icon: "text_fields", value: "text" }
         ]),
         "bar:Bar position": root.select(
             () => (Config.options.bar.bottom ? 1 : 0) | (Config.options.bar.vertical ? 2 : 0),

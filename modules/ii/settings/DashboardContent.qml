@@ -37,7 +37,6 @@ Item {
         readonly property bool media: root.mediaVisible && root.pendingPage === root.mediaPage
 
         readonly property color surface: media ? blended.colLayer1 : Appearance.colors.colLayer1
-        readonly property color toolbar: media ? blended.colLayer1 : Appearance.m3colors.m3surfaceContainer
         readonly property color fgSurface: media ? blended.colOnLayer1 : Appearance.colors.colOnLayer1
         readonly property color subtext: media ? blended.colSubtext : Appearance.colors.colSubtext
         readonly property color hover: media ? blended.colSecondaryContainerHover : Appearance.colors.colLayer1Hover
@@ -98,7 +97,13 @@ Item {
             Wallpapers.apply(box.wallpaper);
     }
 
+    property bool editingText: false
+
     Keys.onPressed: event => {
+        if (editingText) {
+            event.accepted = true;
+            return;
+        }
         if (event.key === Qt.Key_Escape) {
             if (currentPage === presetsPage && presetsLoader.item?.selected) presetsLoader.item.back();
             else GlobalStates.settingsOpen = false;
@@ -291,6 +296,7 @@ Item {
         spacing: 12
 
         Item {
+            id: headerBar
             Layout.fillWidth: true
             implicitHeight: 56
 
@@ -324,8 +330,10 @@ Item {
             }
 
             Toolbar {
+                id: navToolbar
                 anchors.centerIn: parent
-                colBackground: ui.toolbar
+                colBackground: ui.surface
+                outerShadow: true
 
                 Repeater {
                     model: root.pageNames
@@ -375,7 +383,7 @@ Item {
                 Rectangle {
                     id: searchPill
                     implicitHeight: 44
-                    implicitWidth: root.searchOpen ? 280 : 44
+                    implicitWidth: root.searchOpen ? Math.max(120, Math.min(220, (headerBar.width - navToolbar.width) / 2 - 12 - 108)) : 44
                     radius: height / 2
                     color: ui.surface
                     border.width: searchInput.activeFocus ? 2 : 0
@@ -518,6 +526,32 @@ Item {
                         iconSize: 30
                         color: ui.fgContainer
                         visible: avatarImage.status !== Image.Ready
+                    }
+
+                    Rectangle {
+                        anchors.fill: parent
+                        radius: avatarRect.radius
+                        color: Qt.rgba(0, 0, 0, 0.55)
+                        opacity: avatarArea.containsMouse ? 1 : 0
+
+                        Behavior on opacity {
+                            NumberAnimation { duration: 140; easing.type: Easing.OutCubic }
+                        }
+
+                        MaterialSymbol {
+                            anchors.centerIn: parent
+                            text: "close"
+                            iconSize: 24
+                            color: "white"
+                        }
+                    }
+
+                    MouseArea {
+                        id: avatarArea
+                        anchors.fill: parent
+                        hoverEnabled: true
+                        cursorShape: Qt.PointingHandCursor
+                        onClicked: GlobalStates.settingsOpen = false
                     }
                 }
             }
