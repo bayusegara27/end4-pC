@@ -84,6 +84,8 @@ QtObject {
     readonly property var custom: ({
         "bar:Bar style": { type: "select", get: () => Config.options.bar.cornerStyle, set: v => { Config.options.bar.cornerStyle = v; }, options: [{ displayName: Translation.tr("Hug"), icon: "line_curve", value: 0 }, { displayName: Translation.tr("Split Hug"), icon: "splitscreen", value: 6 }, { displayName: Translation.tr("Float"), icon: "view_day", value: 1 }, { displayName: Translation.tr("Islands"), icon: "crop_3_2", value: 2 }, { displayName: Translation.tr("M3"), icon: "interests", value: 3 }, { displayName: Translation.tr("M3 Hug"), icon: "category", value: 4 }, { displayName: Translation.tr("Panel"), icon: "toolbar", value: 5 }] },
         "bar:Group color": { type: "select", get: () => Config.options.bar.groupColor, set: v => { Config.options.bar.groupColor = v; }, get options() { return ["primaryContainer", "secondaryContainer", "tertiaryContainer", "layer1", "layer0"].map(name => ({ value: name, color: roleColor(name) })); } },
+        "interface:Football/Goal file": { type: "text", get: () => Config.options.sidebar.football.goalSoundPath, set: v => { Config.options.sidebar.football.goalSoundPath = v; } },
+        "interface:Football/Corner file": { type: "text", get: () => Config.options.sidebar.football.cornerSoundPath, set: v => { Config.options.sidebar.football.cornerSoundPath = v; } },
         "bar:Frame color": { type: "select", get: () => Config.options.bar.frameColor, set: v => { Config.options.bar.frameColor = v; }, get options() { return ["primaryContainer", "secondaryContainer", "tertiaryContainer", "layer0", "black"].map(name => ({ value: name, color: roleColor(name) })); } },
         "bar:Screen rounded corners": { type: "select", get: () => Config.options.appearance.fakeScreenRounding, set: v => { Config.options.appearance.fakeScreenRounding = v; }, options: [{ displayName: Translation.tr("No"), icon: "close", value: 0 }, { displayName: Translation.tr("Yes"), icon: "check", value: 1 }, { displayName: Translation.tr("When not fullscreen"), icon: "fullscreen_exit", value: 2 }] },
         "bar:Workspaces style": { type: "select", get: () => Config.options.bar.workspaces.style, set: v => { Config.options.bar.workspaces.style = v; }, options: [{ displayName: Translation.tr("Default"), icon: "view_carousel", value: "default" }, { displayName: Translation.tr("GNOME"), icon: "more_horiz", value: "gnome" }, { displayName: Translation.tr("Dots"), icon: "hdr_weak", value: "dots" }, { displayName: Translation.tr("Ticks"), icon: "more_vert", value: "ticks" }] },
@@ -285,6 +287,7 @@ QtObject {
                 { type: "toggle", key: "interface:Left Sidebar/Enable", title: Translation.tr("Media player"), icon: "music_note" },
                 { type: "toggle", key: "interface:Follow Album Colors", title: Translation.tr("Album colors"), icon: "palette" },
                 { type: "toggle", key: "interface:Enable Translator", title: Translation.tr("Translator"), icon: "translate" },
+                { type: "toggle", key: "interface:Enable Football", title: Translation.tr("Football"), icon: "sports_soccer", kw: "soccer parlay fixtures corners goals stats", action: { icon: "settings", tip: Translation.tr("Football sounds and alerts settings"), group: Translation.tr("General"), section: Translation.tr("Sounds") } },
                 { type: "select", key: "interface:AI policy", title: Translation.tr("AI"), icon: "smart_toy" },
                 { type: "select", key: "interface:Weeb policy", title: Translation.tr("Weeb"), icon: "playing_cards" }
             ]
@@ -553,9 +556,17 @@ QtObject {
             ]
         },
         {
-            page: Translation.tr("General"), title: Translation.tr("Sounds"), icon: "notification_sound", cards: [
+            page: Translation.tr("General"), title: Translation.tr("Sounds"), icon: "notification_sound", ordered: true, cards: [
                 { type: "toggle", key: "general:Sounds/Battery", title: Translation.tr("Battery sounds"), icon: "battery_android_full" },
-                { type: "toggle", key: "general:Sounds/Pomodoro", title: Translation.tr("Pomodoro sounds"), icon: "av_timer" }
+                { type: "toggle", key: "general:Sounds/Pomodoro", title: Translation.tr("Pomodoro sounds"), icon: "av_timer" },
+                { type: "toggle", when: "football", key: "interface:Football/Alerts", title: Translation.tr("Football live alerts"), icon: "notifications_active", kw: "football soccer goal corner live sound notification" },
+                { type: "select", when: "football", w: 2, key: "interface:Football/Scope", title: Translation.tr("Football alerts for"), icon: "filter_alt" },
+                { type: "toggle", when: "football", key: "interface:Football/Goal sound", title: Translation.tr("Goal sound"), icon: "campaign" },
+                { type: "text", when: "football", w: 2, key: "interface:Football/Goal file", title: Translation.tr("Goal sound file (empty = default)"), icon: "audio_file", placeholder: "~/Music/goal.ogg" },
+                { type: "toggle", when: "football", key: "interface:Football/Corner sound", title: Translation.tr("Corner sound"), icon: "flag" },
+                { type: "text", when: "football", w: 2, key: "interface:Football/Corner file", title: Translation.tr("Corner sound file (empty = default)"), icon: "audio_file", placeholder: "~/Music/corner.ogg" },
+                { type: "toggle", when: "football", key: "interface:Football/Notify", title: Translation.tr("Goal notifications"), icon: "notifications" },
+                { type: "spin", when: "football", key: "interface:Football/Volume", title: Translation.tr("Sound volume"), icon: "volume_up" }
             ]
         },
         {
@@ -722,6 +733,11 @@ QtObject {
                 { type: "text", key: "services:Prefix web", title: Translation.tr("Prefix: Web search"), icon: "travel_explore" },
                 { type: "text", key: "services:Prefix app", title: Translation.tr("Prefix: Apps"), icon: "apps" },
                 { type: "text", key: "services:Prefix keybinds", title: Translation.tr("Prefix: Keybinds"), icon: "keyboard_command_key" }
+            ]
+        },
+        {
+            page: Translation.tr("Services"), title: Translation.tr("Webapps"), icon: "web_asset", cards: [
+                { type: "webapps", key: "services:Webapps", title: Translation.tr("Webapps"), icon: "web_asset", kw: "webapp web app chromium chrome url site pwa" }
             ]
         },
         {

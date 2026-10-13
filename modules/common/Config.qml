@@ -911,6 +911,19 @@ Singleton {
                     property bool enable: false
                     property int delay: 300 // Delay before sending request. Reduces (potential) rate limits and lag.
                 }
+                property JsonObject football: JsonObject {
+                    property bool enable: false
+                    property int legs: 4
+                    property list<string> markets: ["result", "goals", "corners"]
+                    property bool alerts: false
+                    property string alertsScope: "parlay"
+                    property bool goalSound: false
+                    property string goalSoundPath: ""
+                    property bool cornerSound: false
+                    property string cornerSoundPath: ""
+                    property int soundVolume: 100
+                    property bool notify: true
+                }
                 property JsonObject media: JsonObject {
                     property bool enable: true
                     property bool artColors: false

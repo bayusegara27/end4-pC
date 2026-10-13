@@ -371,6 +371,12 @@ ContentPage {
                             checked: Config.options.sidebar.translator.enable
                             onCheckedChanged: { Config.options.sidebar.translator.enable = checked }
                         }
+                        ConfigSwitch {
+                            buttonIcon: "sports_soccer"
+                            text: Translation.tr("Football")
+                            checked: Config.options.sidebar.football.enable
+                            onCheckedChanged: { Config.options.sidebar.football.enable = checked }
+                        }
                     }
                 }
             }

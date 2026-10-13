@@ -50,6 +50,7 @@ ShellRoot {
         Cliphist.refresh()
         Wallpapers.load()
         LiveWallpaperColorGen.load()
+        Football.load()
         Updates.load()
         LyricsService.restartLyrics()
     }

@@ -185,6 +185,16 @@ Singleton {
         "interface:Left Sidebar/Enable": root.optionSwitch("sidebar.media.enable"),
         "interface:Follow Album Colors": root.optionSwitch("sidebar.media.artColors"),
         "interface:Enable Translator": root.optionSwitch("sidebar.translator.enable"),
+        "interface:Enable Football": root.optionSwitch("sidebar.football.enable"),
+        "interface:Football/Alerts": root.optionSwitch("sidebar.football.alerts"),
+        "interface:Football/Scope": root.optionSelect("sidebar.football.alertsScope", [
+            { displayName: Translation.tr("My parlay"), icon: "layers", value: "parlay" },
+            { displayName: Translation.tr("All matches"), icon: "public", value: "all" }
+        ]),
+        "interface:Football/Goal sound": root.optionSwitch("sidebar.football.goalSound"),
+        "interface:Football/Corner sound": root.optionSwitch("sidebar.football.cornerSound"),
+        "interface:Football/Notify": root.optionSwitch("sidebar.football.notify"),
+        "interface:Football/Volume": root.optionSpin("sidebar.football.soundVolume", 0, 100, 5),
         "interface:Banner": root.optionSwitch("sidebar.banner"),
         "interface:Bottom Group": root.optionSwitch("sidebar.bottomGroup"),
         "interface:Right Sidebar/Media Player": root.optionSwitch("sidebar.mediaPlayer"),
@@ -317,12 +327,15 @@ Singleton {
         "bar:Workspaces shown": root.optionSpin("bar.workspaces.shown", 1, 30, 1),
         "bar:Polling interval (ms)": root.optionSpin("resources.updateInterval", 100, 10000, 100),
         "bar:Max media width": root.optionSpin("bar.media.maxWidth", 100, 500, 10),
-        "bar:Group style": root.optionSelect("bar.borderless", [
+        "bar:Group style": Object.assign(root.optionSelect("bar.borderless", [
             { displayName: Translation.tr(""), icon: "block", value: "transparent" },
             { displayName: Translation.tr("Pills"), icon: "pill", value: "pills" },
             { displayName: Translation.tr("Separated"), icon: "view_column_2", value: "separated" },
             { displayName: Translation.tr("Segmented"), icon: "tablet", value: "segmented" }
-        ]),
+        ]), {
+            canReset: () => (Config.options.bar.widgetStyles ?? []).length > 0,
+            reset: () => { Config.options.bar.widgetStyles = []; }
+        }),
         "bar:Autohide": root.optionSelect("bar.autoHide.enable", [
             { displayName: Translation.tr("No"), icon: "close", value: false },
             { displayName: Translation.tr("Yes"), icon: "check", value: true }
