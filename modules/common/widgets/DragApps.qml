@@ -531,6 +531,21 @@ Item {
                                                     radius: Appearance.rounding.small
                                                 }
                                             }
+
+                                            onStopped: {
+                                                captureSource = null
+                                            }
+
+                                            Component.onDestruction: {
+                                                captureSource = null
+                                            }
+                                        }
+
+                                        Connections {
+                                            target: windowButton.modelData ?? null
+                                            function onClosed() {
+                                                if (screencopyView) screencopyView.captureSource = null
+                                            }
                                         }
                                     }
                                 }

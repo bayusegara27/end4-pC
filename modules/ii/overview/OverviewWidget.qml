@@ -190,7 +190,7 @@ Item {
                     required property var modelData
                     property int monitorId: windowData?.monitor
                     property var monitor: HyprlandData.monitors.find(m => m.id == monitorId)
-                    property var address: `0x${modelData.HyprlandToplevel.address}`
+                    property var address: modelData?.HyprlandToplevel?.address ? `0x${modelData.HyprlandToplevel.address}` : ""
                     toplevel: modelData
                     monitorData: this.monitor
                     scale: root.scale

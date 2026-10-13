@@ -125,8 +125,12 @@ Item { // Window
     ScreencopyView {
         id: windowPreview
         anchors.fill: parent
-        captureSource: GlobalStates.overviewOpen ? root.toplevel : null
+        captureSource: (GlobalStates.overviewOpen && root.toplevel) ? root.toplevel : null
         live: true
+
+        onStopped: {
+            captureSource = null
+        }
 
         // Color overlay for interactions
         Rectangle {
@@ -172,6 +176,21 @@ Item { // Window
             Behavior on height {
                 animation: Appearance.animation.elementMoveEnter.numberAnimation.createObject(this)
             }
+        }
+    }
+
+    Connections {
+        target: root.toplevel ?? null
+        function onClosed() {
+            if (windowPreview) {
+                windowPreview.captureSource = null
+            }
+        }
+    }
+
+    Component.onDestruction: {
+        if (windowPreview) {
+            windowPreview.captureSource = null
         }
     }
 }
