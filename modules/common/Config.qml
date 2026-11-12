@@ -109,6 +109,15 @@ Singleton {
                 property string uiBackground: "themed"
                 property bool extraBackgroundTint: true
                 property int fakeScreenRounding: 2 // 0: None | 1: Always | 2: When not fullscreen
+                property JsonObject icons: JsonObject {
+                    property string theme: "Tela"
+                    property bool followScheme: true
+                    property bool dynamicColor: true
+                    property bool preventBreezeOverride: true
+                    property int keepGenerated: 6
+                    property string lightVariant: "" // Optional explicit override, empty = auto
+                    property string darkVariant: ""
+                }
                 property JsonObject fonts: JsonObject {
                     property string main: "Google Sans Flex"
                     property string numbers: "Google Sans Flex"
@@ -127,6 +136,7 @@ Singleton {
                 property JsonObject wallpaperTheming: JsonObject {
                     property bool enableAppsAndShell: true
                     property bool enableQtApps: true
+                    property bool lockKonsoleColors: true
                     property bool enableTerminal: true
                     property JsonObject terminalGenerationProps: JsonObject {
                         property real harmony: 0.6
@@ -267,6 +277,17 @@ Singleton {
                 property JsonObject widgets: JsonObject {
                     property bool blurWidgets: false
                     property real blurRadius: 32
+                    property JsonObject glass: JsonObject {
+                        property bool enable: false
+                        property string tint: "transparent"
+                        property real tintStrength: 0.3
+                        property real rimWidth: 16
+                        property real pull: 26
+                        property real split: 0.06
+                        property real haze: 3
+                        property real vividness: 1.3
+                        property real sheen: 0.55
+                    }
                     property bool shadow: true
                     property list<string> menuHidden: []
 
@@ -287,9 +308,9 @@ Singleton {
                         property real x: 100
                         property real y: 100
                         property real z: 0
-                        property string style: "cookie"        // Options: "cookie", "digital"
+                        property string style: "cookie"        // Options: "cookie", "digital", "daily", "pixel"
                         property string color: ""
-                        property string styleLocked: "cookie"  // Options: "cookie", "digital"
+                        property string styleLocked: "cookie"  // Options: "cookie", "digital", "daily", "pixel"
                         property JsonObject cookie: JsonObject {
                             property bool aiStyling: false
                             property int sides: 14
@@ -316,6 +337,9 @@ Singleton {
                                 property real size: 90
                                 property real roundness: 0
                             }
+                        }
+                        property JsonObject daily: JsonObject {
+                            property string variant: "badge" // Options: "badge", "morning", "script", "bold"
                         }
                         property JsonObject pixel: JsonObject {
                             property string orientation: "vertical"
@@ -509,6 +533,10 @@ Singleton {
                         property string sizeMode: "2x2"
                     }
                 }
+                property JsonObject liveWallpaper: JsonObject {
+                    property bool pauseOnBattery: false // Pause as soon as the charger is out
+                    property real pauseBelowPercent: 0 // Or only under this charge, 0 to ignore
+                }
                 property list<string> screenList: []
                 // Who owns the desktop background: "shell" (quickshell draws it
                 // itself) or "wallpaperengine" (linux-wallpaperengine, managed
@@ -574,6 +602,8 @@ Singleton {
                 }
 
                 property JsonObject aiUsage: JsonObject {
+                    property bool claudeEnabled: true
+                    property bool codexEnabled: true
                     property int tokenLimit: 1000000
                     property int updateInterval: 60
                 }
@@ -596,6 +626,11 @@ Singleton {
                 }
                 
                 property list<string> screenList: [] // List of names, like "eDP-1", find out with 'hyprctl monitors' command
+                property JsonObject battery: JsonObject {
+                    property string style: "bar"
+                    property bool showPercentage: true
+                    property bool showCharging: true
+                }
                 property JsonObject utilButtons: JsonObject {
                     property bool showScreenSnip: true
                     property bool showColorPicker: true
@@ -691,6 +726,8 @@ Singleton {
                 property bool showMedia: true
                 property bool monochromeIcons: true
                 property real height: 60
+                property real magnification: 1.2
+                property bool magnify: false
                 property real hoverRegionHeight: 2
                 property bool pinnedOnStartup: false
                 property bool hoverToReveal: true // When false, only reveals on empty workspace
@@ -701,27 +738,27 @@ Singleton {
 
             property JsonObject interactions: JsonObject {
                 property JsonObject scrolling: JsonObject {
-                    property bool fasterTouchpadScroll: true // Master switch for inertial scroll engine
+                    property bool fasterTouchpadScroll: true // Apply shared touchpad sensitivity to scrollable views
 
-                    // === Touchpad physics ===
+                    // Both values multiply direct pixel movement and the angle fallback.
+                    property real touchpadSensitivity: 3.5
+                    property real touchpadScrollFactor: 1.0
+                    // Legacy factors > 10 are divided by 450 to preserve relative
+                    // preferences and per-list ratios, not the old absolute speed.
+
+                    // Legacy fling/bounce options retained for config compatibility;
+                    // direct touchpad tracking no longer adds inertia after release.
                     property real flingFriction: 0.002
                     property real flingStopThreshold: 0.01
-                    // Sensitivity: pixels per angleDelta unit during finger-follow phase
-                    property real touchpadSensitivity: 3.5
-                    // Velocity reflection coefficient at bounds (0 = hard stop, 1 = perfect bounce)
                     property real bounceDamping: 0.3
 
-                    // === Mouse wheel ===
+                    // Legacy mouse options retained for config compatibility only.
+                    // Native Qt scrolling does not use these or per-list boosts.
                     property int wheelScrollAmount: 100
                     property int wheelDurationMin: 200
                     property int wheelDurationMax: 400
-
-                    // === Detection ===
-                    property int mouseScrollDeltaThreshold: 120 // angleDelta >= this = mouse wheel
-
-                    // === Relative Multipliers ===
-                    property real touchpadScrollFactor: 1.0 // scales touchpadSensitivity per-instance
-                    property real mouseScrollFactor: 1.0    // scales wheelScrollAmount per-instance
+                    property int mouseScrollDeltaThreshold: 120
+                    property real mouseScrollFactor: 1.0
                 }
                 property JsonObject deadPixelWorkaround: JsonObject { // Hyprland leaves out 1 pixel on the right for interactions
                     property bool enable: false
@@ -907,6 +944,8 @@ Singleton {
                 property real bannerFocusX: 0.5
                 property real bannerFocusY: 0.5
                 property bool keepRightSidebarLoaded: true
+                property string leftLastPage: "home"
+                property bool leftRememberPage: true
                 property JsonObject translator: JsonObject {
                     property bool enable: false
                     property int delay: 300 // Delay before sending request. Reduces (potential) rate limits and lag.

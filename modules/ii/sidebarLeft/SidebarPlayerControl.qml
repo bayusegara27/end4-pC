@@ -15,7 +15,21 @@ import Quickshell.Services.Mpris
 
 Item {
     id: root
-    property var player: Mpris.players.values[root.currentPlayerIndex] ?? Mpris.players.values[0]
+    // Show all available MPRIS players.
+    property var availablePlayers: Mpris.players.values
+
+    // Optional: Hide Chromium's built-in MPRIS instances
+    // if they appear as duplicate players.
+    // To enable this filter, comment out the property above
+    // and uncomment the block below.
+
+    // property var availablePlayers: Mpris.players.values.filter(p => {
+    //     const service = (p.dbusName ?? "").toLowerCase()
+    //     return !service.includes("org.mpris.mediaplayer2.chromium.instance")
+    // })
+
+    // Currently selected player
+    property var player: availablePlayers[root.currentPlayerIndex] ?? availablePlayers[0]
     property var artUrl: player?.trackArtUrl ?? ""
     property string artDownloadLocation: Directories.coverArt
     property bool showLyrics: Config.options.sidebar.media.showLyrics ?? true
@@ -100,9 +114,16 @@ Item {
         anchors.rightMargin: 4
         anchors.topMargin: -1
         anchors.bottomMargin: 4
-        color: ColorUtils.transparentize(artDominantColor, 0.9)
+        color: Config.options.background.widgets.glass.enable ? "transparent" : ColorUtils.transparentize(artDominantColor, 0.9)
         radius: Appearance.rounding.normal
         clip: true
+
+        WindowGlass {
+            anchors.fill: parent
+            cardRadius: parent.radius
+            tint: root.artDominantColor
+            tintStrength: 0
+        }
 
         Image {
             id: blurArtSource
@@ -321,10 +342,9 @@ Item {
 
                 RowLayout {
                     Layout.fillWidth: true
-                    spacing: 16
-
+                    spacing: 12
                     RippleButton {
-                        property real baseSize: Math.max(56, parent.parent.height * 0.065)
+                        property real baseSize: Math.max(60, parent.parent.height * 0.06)
                         implicitWidth: baseSize
                         implicitHeight: baseSize 
                         buttonRadius: Appearance.rounding.verylarge
@@ -336,7 +356,7 @@ Item {
                         contentItem: MaterialShapeWrappedMaterialSymbol {
                             wrappedShape: MaterialShape.Shape.Cookie12Sided
                             padding: 0
-                            iconSize: 30
+                            iconSize: 32
                             fill: 1
                             text: "skip_previous"
                             color: ColorUtils.transparentize(blendedColors.colSecondaryContainer, 0.7)
@@ -345,7 +365,7 @@ Item {
                     }
 
                     RippleButton {
-                        property real baseSize: Math.max(56, parent.parent.height * 0.065)
+                        property real baseSize: Math.max(70, parent.parent.height * 0.1)
                         Layout.fillWidth: true
                         implicitHeight: baseSize
                         buttonRadius: (root.player?.isPlaying ?? false) ? Appearance.rounding.verylarge : baseSize / 2
@@ -354,7 +374,7 @@ Item {
                         colRipple: (root.player?.isPlaying ?? false) ? blendedColors.colPrimaryActive : blendedColors.colSecondaryContainerActive
                         downAction: () => root.player?.togglePlaying()
                         contentItem: MaterialSymbol {
-                            iconSize: 38
+                            iconSize: 50
                             fill: 1
                             horizontalAlignment: Text.AlignHCenter
                             color: (root.player?.isPlaying ?? false) ? blendedColors.colOnPrimary : blendedColors.colOnSecondaryContainer
@@ -366,7 +386,7 @@ Item {
                     }
 
                     RippleButton {
-                        property real baseSize: Math.max(56, parent.parent.height * 0.065)
+                        property real baseSize: Math.max(60, parent.parent.height * 0.06)
                         implicitWidth: baseSize
                         implicitHeight: baseSize 
                         buttonRadius: Appearance.rounding.verylarge
@@ -378,7 +398,7 @@ Item {
                         contentItem: MaterialShapeWrappedMaterialSymbol {
                             wrappedShape: MaterialShape.Shape.Cookie12Sided
                             padding: 0
-                            iconSize: 30
+                            iconSize: 32
                             fill: 1
                             text: "skip_next"
                             color: ColorUtils.transparentize(blendedColors.colSecondaryContainer, 0.7)
@@ -387,69 +407,74 @@ Item {
                     }
                 }
 
-                ColumnLayout {
+                RowLayout {
                     Layout.fillWidth: true
-                    spacing: 4
+                    spacing: 24
 
-                    Item {
+                    ColumnLayout {
                         Layout.fillWidth: true
-                        implicitHeight: Math.max(sliderLoader.implicitHeight, progressBarLoader.implicitHeight)
+                        spacing: 4
 
-                        Loader {
-                            id: sliderLoader
-                            property var player: root.player
-                            anchors.fill: parent
-                            active: sliderLoader.player?.canSeek ?? false
-                            sourceComponent: StyledSlider {
-                                configuration: StyledSlider.Configuration.Wavy
-                                highlightColor: blendedColors.colPrimary
-                                trackColor: blendedColors.colSecondaryContainer
-                                handleColor: blendedColors.colPrimary
-                                value: (sliderLoader.player?.position ?? 0) / (sliderLoader.player?.length ?? 1)
-                                onMoved: {
-                                    sliderLoader.player.position = value * sliderLoader.player.length
-                                    lyricsComp.restartLyrics()
+                        Item {
+                            Layout.fillWidth: true
+                            implicitHeight: Math.max(sliderLoader.implicitHeight, progressBarLoader.implicitHeight)
+
+                            Loader {
+                                id: sliderLoader
+                                property var player: root.player
+                                anchors.fill: parent
+                                active: sliderLoader.player?.canSeek ?? false
+                                sourceComponent: StyledSlider {
+                                    configuration: StyledSlider.Configuration.Wavy
+                                    highlightColor: blendedColors.colPrimary
+                                    trackColor: blendedColors.colSecondaryContainer
+                                    handleColor: blendedColors.colPrimary
+                                    value: (sliderLoader.player?.position ?? 0) / (sliderLoader.player?.length ?? 1)
+                                    onMoved: {
+                                        sliderLoader.player.position = value * sliderLoader.player.length
+                                        lyricsComp.restartLyrics()
+                                    }
+                                }
+                            }
+
+                            Loader {
+                                id: progressBarLoader
+                                property var player: root.player
+                                anchors {
+                                    verticalCenter: parent.verticalCenter
+                                    left: parent.left
+                                    right: parent.right
+                                }
+                                active: !(progressBarLoader.player?.canSeek ?? false)
+                                sourceComponent: StyledProgressBar {
+                                    wavy: progressBarLoader.player?.isPlaying ?? false
+                                    highlightColor: blendedColors.colPrimary
+                                    trackColor: blendedColors.colSecondaryContainer
+                                    value: (progressBarLoader.player?.position ?? 0) / (progressBarLoader.player?.length ?? 1)
                                 }
                             }
                         }
 
-                        Loader {
-                            id: progressBarLoader
-                            property var player: root.player
-                            anchors {
-                                verticalCenter: parent.verticalCenter
-                                left: parent.left
-                                right: parent.right
+                        RowLayout {
+                            Layout.fillWidth: true
+
+                            StyledText {
+                                font.pixelSize: Appearance.font.pixelSize.normal
+                                color: blendedColors.colSubtext
+                                font.letterSpacing: -0.4
+                                font.features: { "tnum": 1 }
+                                text: StringUtils.friendlyTimeForSeconds(root.player?.position ?? 0)
                             }
-                            active: !(progressBarLoader.player?.canSeek ?? false)
-                            sourceComponent: StyledProgressBar {
-                                wavy: progressBarLoader.player?.isPlaying ?? false
-                                highlightColor: blendedColors.colPrimary
-                                trackColor: blendedColors.colSecondaryContainer
-                                value: (progressBarLoader.player?.position ?? 0) / (progressBarLoader.player?.length ?? 1)
+
+                            Item { Layout.fillWidth: true }
+
+                            StyledText {
+                                font.pixelSize: Appearance.font.pixelSize.normal
+                                color: blendedColors.colSubtext
+                                font.letterSpacing: -0.4
+                                font.features: { "tnum": 1 }
+                                text: StringUtils.friendlyTimeForSeconds(root.player?.length ?? 0)
                             }
-                        }
-                    }
-
-                    RowLayout {
-                        Layout.fillWidth: true
-
-                        StyledText {
-                            font.pixelSize: Appearance.font.pixelSize.normal
-                            color: blendedColors.colSubtext
-                            font.letterSpacing: -0.4
-                            font.features: { "tnum": 1 }
-                            text: StringUtils.friendlyTimeForSeconds(root.player?.position ?? 0)
-                        }
-
-                        Item { Layout.fillWidth: true }
-
-                        StyledText {
-                            font.pixelSize: Appearance.font.pixelSize.normal
-                            color: blendedColors.colSubtext
-                            font.letterSpacing: -0.4
-                            font.features: { "tnum": 1 }
-                            text: StringUtils.friendlyTimeForSeconds(root.player?.length ?? 0)
                         }
                     }
                 }
@@ -503,47 +528,26 @@ Item {
                     }
                 }
 
-                RippleButton {
-                    property real baseSize: Math.max(36, parent.parent.height * 0.05)
-                    Layout.fillWidth: true
-                    implicitHeight: baseSize
-                    buttonRadius: Appearance.rounding.large
-                    colBackground: ColorUtils.transparentize(blendedColors.colSecondaryContainer, 0.7)
-                    colBackgroundHover: blendedColors.colSecondaryContainerHover
-                    colRipple: blendedColors.colSecondaryContainerActive
-                    downAction: () => {
-                        if (root.player) root.player.volume = Math.max(0, (root.player.volume ?? 1) - 0.1)  
-                    }
-                    contentItem: MaterialSymbol {
-                        iconSize: 18
-                        fill: 1
-                        horizontalAlignment: Text.AlignHCenter
-                        color: blendedColors.colOnSecondaryContainer
-                        text: "volume_down"
-                    }
-                }
+                   // Volume slider
+                   StyledSlider {
+                        Layout.fillWidth: true
+                        Layout.alignment: Qt.AlignVCenter
 
-                RippleButton {
-                    property real baseSize: Math.max(36, parent.parent.height * 0.05)
-                    Layout.fillWidth: true
-                    implicitHeight: baseSize
-                    buttonRadius: Appearance.rounding.large
-                    colBackground: ColorUtils.transparentize(blendedColors.colSecondaryContainer, 0.7)
-                    colBackgroundHover: blendedColors.colSecondaryContainerHover
-                    colRipple: blendedColors.colSecondaryContainerActive
-                    downAction: () => {
-                        if (root.player) root.player.volume = Math.min(1.5, (root.player.volume ?? 1) + 0.1)  
-                    }
-                    contentItem: MaterialSymbol {
-                        iconSize: 18
-                        fill: 1
-                        horizontalAlignment: Text.AlignHCenter
-                        color: blendedColors.colOnSecondaryContainer
-                        text: "volume_up"
-                    }
-                }
+                        configuration: StyledSlider.Configuration.Wavy
 
-                RippleButton {
+                        highlightColor: blendedColors.colPrimary
+                        trackColor: blendedColors.colSecondaryContainer
+                        handleColor: blendedColors.colPrimary
+
+                        value: root.player?.volume ?? 1
+
+                        onMoved: {
+                            if (root.player)
+                            root.player.volume = value
+                        }
+                    }
+
+               RippleButton {
                     id: moreButton
                     property real baseSize: Math.max(36, parent.parent.height * 0.05)
                     implicitWidth: baseSize
@@ -663,8 +667,14 @@ Item {
                 visible: Mpris.players.values.length > 1
                 Layout.fillWidth: true
                 Layout.topMargin: 12
-                model: Mpris.players.values.map(p => p.identity ?? p.desktopEntry ?? "Unknown")
-                currentIndex: 0
+                model: root.availablePlayers.map(p =>
+                     p.identity ?? p.desktopEntry ?? "Unknown"
+                )
+               currentIndex: root.currentPlayerIndex
+
+    onActivated: index => {
+        root.currentPlayerIndex = index
+                }
             }
         }
     }

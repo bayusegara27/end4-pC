@@ -29,6 +29,7 @@ import urllib.request
 import urllib.parse
 import json
 import re
+import xml.etree.ElementTree as ET
 import base64
 import html
 import time
@@ -291,6 +292,49 @@ def fetch_ytmusic(title: str, artist: str) -> tuple:
 
 # ----------------- MAIN FLOW -----------------
 
+def _ttml_seconds(value: str) -> float:
+    total = 0.0
+    for part in value.replace("s", "").split(":"):
+        total = total * 60 + float(part)
+    return total
+
+def _parse_ttml(ttml: str) -> list:
+    root = ET.fromstring(ttml)
+    lines = []
+    for p in root.iter():
+        if not p.tag.endswith("}p") and p.tag != "p":
+            continue
+        begin = p.get("begin")
+        if begin is None:
+            continue
+        text = re.sub(r"\s+", " ", "".join(p.itertext())).strip()
+        try:
+            lines.append({"time": _ttml_seconds(begin), "text": text})
+        except ValueError:
+            continue
+    return sorted(lines, key=lambda x: x["time"])
+
+BOIDU_BASES = ["https://api.betterlyrics.org", "https://lyrics-api.boidu.dev"]
+
+def fetch_boidu(title: str, artist: str, duration: float) -> tuple:
+    ct = clean_title(title)
+    ca = clean_artist(artist)
+    for t_query, a_query in [(ct, ca), (title, artist)]:
+        query = f"/getLyrics?s={urllib.parse.quote(t_query)}&a={urllib.parse.quote(a_query)}"
+        if duration > 0:
+            query += f"&d={int(duration)}"
+        for base in BOIDU_BASES:
+            try:
+                req = urllib.request.Request(base + query, headers={"User-Agent": "Mozilla/5.0"})
+                with urllib.request.urlopen(req, timeout=10) as r:
+                    data = json.loads(r.read().decode())
+                lines = _parse_ttml(data.get("ttml") or "")
+                if len(lines) >= 3:
+                    return "BetterLyrics", lines
+            except Exception:
+                continue
+    return None, []
+
 def main():
     if len(sys.argv) < 3:
         print("no_info", flush=True)
@@ -311,6 +355,8 @@ def main():
     # Map requested provider
     if preferred == "lrclib":
         provider_name, lines = fetch_lrclib(title, artist, duration)
+    elif preferred in ("boidu", "betterlyrics"):
+        provider_name, lines = fetch_boidu(title, artist, duration)
     elif preferred in ("netease", "163"):
         provider_name, lines = fetch_netease(title, artist)
     elif preferred == "kugou":
@@ -322,12 +368,14 @@ def main():
     else:
         # "auto" prioritized fallback chain:
         # 1. LRCLIB (global synced lyrics)
-        # 2. Netease Cloud Music (world-class CJK/Anime/Western coverage)
-        # 3. Kugou Music (massive synced database)
-        # 4. QQ Music (Tencent library)
-        # 5. YouTube Music (official fallback)
+        # 2. BetterLyrics / Boidu (rich TTML synced lyrics)
+        # 3. Netease Cloud Music (world-class CJK/Anime/Western coverage)
+        # 4. Kugou Music (massive synced database)
+        # 5. QQ Music (Tencent library)
+        # 6. YouTube Music (official fallback)
         chain = [
             lambda: fetch_lrclib(title, artist, duration),
+            lambda: fetch_boidu(title, artist, duration),
             lambda: fetch_netease(title, artist),
             lambda: fetch_kugou(title, artist, duration),
             lambda: fetch_qqmusic(title, artist),
@@ -342,7 +390,6 @@ def main():
                     break
             except Exception:
                 continue
-
     if not lines:
         print("not_found", flush=True)
         sys.exit(0)

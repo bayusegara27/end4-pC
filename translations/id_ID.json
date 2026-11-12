@@ -560,5 +560,15 @@
   "Pts": "Poin",
   "Loading standings…": "Memuat klasemen…",
   "Could not load the standings": "Gagal memuat klasemen",
-  "Form": "Performa"
+  "Form": "Performa",
+  "Keep Konsole color scheme": "Pertahankan skema warna Konsole",
+  "Scan QR code": "Pindai kode QR",
+  "Battery style": "Gaya baterai",
+  "Number": "Angka",
+  "Show percentage": "Tampilkan persentase",
+  "Charging bolt": "Ikon petir pengisian daya",
+  "Choose how the battery looks in the bar": "Pilih tampilan baterai di bar",
+  "Magnification": "Pembesaran",
+  "Magnification amount": "Jumlah pembesaran",
+  "Magnification amount (%)": "Jumlah pembesaran (%)"
 }

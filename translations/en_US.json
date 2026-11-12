@@ -233,6 +233,7 @@
   "Fidelity": "Fidelity",
   "Prefixes": "Prefixes",
   "Terminal": "Terminal",
+  "Keep Konsole color scheme": "Keep Konsole color scheme",
   "Incorrect password": "Incorrect password",
   "Always": "Always",
   "☕ Break: %1 minutes": "☕ Break: %1 minutes",
@@ -558,6 +559,7 @@
   "Right to left": "Right to left",
   "Save paths": "Save paths",
   "Saving...": "Saving...",
+  "Scan QR code": "Scan QR code",
   "Screen Translator": "Screen Translator",
   "Screens": "Screens",
   "Screenshot Path (leave empty to just copy)": "Screenshot Path (leave empty to just copy)",
@@ -1257,5 +1259,13 @@
   "Pts": "Pts",
   "Loading standings…": "Loading standings…",
   "Could not load the standings": "Could not load the standings",
-  "Form": "Form"
+  "Form": "Form",
+  "Battery style": "Battery style",
+  "Number": "Number",
+  "Show percentage": "Show percentage",
+  "Charging bolt": "Charging bolt",
+  "Choose how the battery looks in the bar": "Choose how the battery looks in the bar",
+  "Magnification": "Magnification",
+  "Magnification amount": "Magnification amount",
+  "Magnification amount (%)": "Magnification amount (%)"
 }

@@ -20,6 +20,7 @@ ContentPage {
         { id: "leftSidebarButton", name: Translation.tr("Left Sidebar Button"),  icon: "left_panel_open" },
         { id: "workspaces",        name: Translation.tr("Workspaces"),           icon: "steppers" },
         { id: "weatherBar",        name: Translation.tr("Weather"),              icon: "flare" },
+        { id: "liveWallpaper",     name: Translation.tr("Live wallpaper"),        icon: "play_pause" },
         { id: "media",             name: Translation.tr("Media"),                icon: "music_note" },
         { id: "resources",         name: Translation.tr("Resources"),            icon: "empty_dashboard" },
         { id: "systemIcons",       name: Translation.tr("System Icons"),         icon: "info" },
@@ -85,7 +86,8 @@ ContentPage {
         utilButtons: Translation.tr("Utility buttons"),
         workspaces: Translation.tr("Workspaces"),
         resources: Translation.tr("Resources"),
-        media: Translation.tr("Media")
+        media: Translation.tr("Media"),
+        aiUsage: Translation.tr("AI Usage")
     })
 
     function openWidgetSettings(id) {
@@ -757,6 +759,45 @@ ContentPage {
         }
 
         ContentSection {
+            icon: "battery_android_full"
+            title: Translation.tr("Battery")
+            visible: page.isUsed("batteryIndicator")
+
+            GroupedList {
+                ConfigComboBox {
+                    Layout.fillWidth: true
+                    buttonIcon: "style"
+                    text: Translation.tr("Battery style")
+                    fieldWidth: 220
+                    fixedWidth: true
+                    currentValue: Config.options.bar.battery.style
+                    onSelected: newValue => { Config.options.bar.battery.style = newValue }
+                    model: [
+                        { displayName: "Android", value: "bar" },
+                        { displayName: "iOS", value: "ios" },
+                        { displayName: "macOS", value: "macos" },
+                        { displayName: "Windows", value: "windows" },
+                        { displayName: Translation.tr("Ring"), value: "ring" },
+                        { displayName: Translation.tr("Icon"), value: "icon" },
+                        { displayName: Translation.tr("Number"), value: "number" }
+                    ]
+                }
+                ConfigSwitch {
+                    buttonIcon: "percent"
+                    text: Translation.tr("Show percentage")
+                    checked: Config.options.bar.battery.showPercentage
+                    onCheckedChanged: { Config.options.bar.battery.showPercentage = checked }
+                }
+                ConfigSwitch {
+                    buttonIcon: "bolt"
+                    text: Translation.tr("Charging bolt")
+                    checked: Config.options.bar.battery.showCharging
+                    onCheckedChanged: { Config.options.bar.battery.showCharging = checked }
+                }
+            }
+        }
+
+        ContentSection {
             icon: "empty_dashboard"
             shape: MaterialShape.Shape.Burst
             title: Translation.tr("Resources")
@@ -828,6 +869,26 @@ ContentPage {
                     onValueChanged: {
                         Config.options.resources.updateInterval = value;
                     }
+                }
+            }
+        }
+
+        ContentSection {
+            icon: "neurology"
+            title: Translation.tr("AI Usage")
+
+            GroupedList {
+                ConfigSwitch {
+                    buttonIcon: "terminal"
+                    text: Translation.tr("Claude Code")
+                    checked: Config.options.bar.aiUsage.claudeEnabled
+                    onCheckedChanged: Config.options.bar.aiUsage.claudeEnabled = checked
+                }
+                ConfigSwitch {
+                    buttonIcon: "code"
+                    text: Translation.tr("Codex")
+                    checked: Config.options.bar.aiUsage.codexEnabled
+                    onCheckedChanged: Config.options.bar.aiUsage.codexEnabled = checked
                 }
             }
         }

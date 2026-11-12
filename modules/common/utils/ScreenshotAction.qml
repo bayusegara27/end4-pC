@@ -18,6 +18,7 @@ Singleton {
         Edit,
         Search,
         CharRecognition,
+        QrCode,
         Record,
         RecordWithSound
     }
@@ -39,7 +40,7 @@ Singleton {
 
         const cropBase = `magick ${StringUtils.shellSingleQuoteEscape(screenshotPath)} `
             + `-crop ${rw}x${rh}+${rx}+${ry} +repage`
-        const cropToStdout = `${cropBase} -`
+        const cropToStdout = `${cropBase} PNG:-`
         const cropInPlace = `${cropBase} '${StringUtils.shellSingleQuoteEscape(screenshotPath)}'`
         const cleanup = `rm '${StringUtils.shellSingleQuoteEscape(screenshotPath)}'`
         const slurpRegion = `${arw}x${arh}+${arx}+${ary}`
@@ -52,7 +53,7 @@ Singleton {
             case ScreenshotAction.Action.Copy:
                 if (saveDir === "") {
                     // not saving the screenshot, just copy to clipboard
-                    return ["bash", "-c", `${cropToStdout} | wl-copy && ${cleanup}`]
+                    return ["bash", "-c", `${cropToStdout} | wl-copy --type image/png && ${cleanup}`]
                     break;
                 }
                 return [
@@ -60,7 +61,7 @@ Singleton {
                     `mkdir -p '${StringUtils.shellSingleQuoteEscape(saveDir)}' && \
                     saveFileName="screenshot-$(date '+%Y-%m-%d_%H.%M.%S').png" && \
                     savePath="${saveDir}/$saveFileName" && \
-                    ${cropToStdout} | tee >(wl-copy) > "$savePath" && \
+                    ${cropToStdout} | tee >(wl-copy --type image/png) > "$savePath" && \
                     ${cleanup}`
                 ]
 
@@ -73,6 +74,10 @@ Singleton {
                 break;
             case ScreenshotAction.Action.CharRecognition:
                 return ["bash", "-c", `${cropInPlace} && tesseract '${StringUtils.shellSingleQuoteEscape(screenshotPath)}' stdout -l $(tesseract --list-langs | awk 'NR>1{print $1}' | tr '\\n' '+' | sed 's/\\+$/\\n/') | wl-copy && ${cleanup}`]
+                break;
+            case ScreenshotAction.Action.QrCode:
+                // NOTE: zxing-cpp handles 1px/module and inverted codes that zbar misses
+                return ["bash", "-c", `${cropInPlace} && { if ! command -v ZXingReader >/dev/null; then notify-send -a "Screen Snip" "QR scan unavailable" "Install the zxing-cpp package"; else qrText=$(ZXingReader -single -bytes '${StringUtils.shellSingleQuoteEscape(screenshotPath)}' 2>/dev/null); if [ -n "$qrText" ]; then printf '%s' "$qrText" | wl-copy && notify-send -a "Screen Snip" "QR code copied" "$qrText"; else notify-send -a "Screen Snip" "No QR code found" "Try a larger or sharper selection"; fi; fi; }; ${cleanup}`]
                 break;
             case ScreenshotAction.Action.Record:
                 return ["bash", "-c", `${Directories.recordScriptPath} --region '${slurpRegion}'${audioFlags}`]
