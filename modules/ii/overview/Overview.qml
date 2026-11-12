@@ -14,6 +14,7 @@ import Quickshell.Hyprland
 Scope {
     id: overviewScope
     property bool dontAutoCancelSearch: false
+    property real superPressTime: 0
 
     PanelWindow {
         id: panelWindow
@@ -247,18 +248,35 @@ Scope {
         description: "Toggles search on release"
 
         onPressed: {
+            overviewScope.superPressTime = Date.now();
             GlobalStates.superReleaseMightTrigger = true;
         }
 
         onReleased: {
-            if (!GlobalStates.superReleaseMightTrigger) {
-                GlobalStates.superReleaseMightTrigger = true;
+            const elapsed = Date.now() - overviewScope.superPressTime;
+            if (!GlobalStates.superReleaseMightTrigger || elapsed > 350) {
+                GlobalStates.superReleaseMightTrigger = false;
                 return;
             }
             if (GlobalStates.sidebarLeftOpen || GlobalStates.sidebarRightOpen) {
+                GlobalStates.superReleaseMightTrigger = false;
                 return;
             }
+            GlobalStates.superReleaseMightTrigger = false;
             GlobalStates.overviewOpen = !GlobalStates.overviewOpen;
+        }
+    }
+    Connections {
+        target: Hyprland
+        enabled: WM.compositor === "hyprland"
+
+        function onRawEvent(event) {
+            if (GlobalStates.superReleaseMightTrigger) {
+                const name = event.name;
+                if (name.startsWith("workspace") || name.startsWith("createworkspace") || name.startsWith("destroyworkspace") || name.startsWith("moveworkspace") || name === "renameworkspace" || name.startsWith("activewindow") || name.startsWith("openwindow") || name.startsWith("closewindow") || name.startsWith("movewindow") || name.startsWith("focusedmon")) {
+                    GlobalStates.superReleaseMightTrigger = false;
+                }
+            }
         }
     }
     CompositorGlobalShortcut {
