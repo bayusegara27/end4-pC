@@ -191,6 +191,9 @@ Scope {
     CompositorGlobalShortcut {
         name: "settingsToggle"
         description: "Toggles settings panel"
-        onPressed: GlobalStates.settingsOpen = !GlobalStates.settingsOpen;
+        onPressed: {
+            GlobalStates.superReleaseMightTrigger = false;
+            GlobalStates.settingsOpen = !GlobalStates.settingsOpen;
+        }
     }
 }

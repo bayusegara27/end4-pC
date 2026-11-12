@@ -88,6 +88,7 @@ Scope {
         description: "Toggles overlay on press"
 
         onPressed: {
+            GlobalStates.superReleaseMightTrigger = false;
             GlobalStates.overlayOpen = !GlobalStates.overlayOpen;
         }
     }

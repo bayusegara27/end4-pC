@@ -154,6 +154,7 @@ Scope { // Scope
         description: "Toggles on screen keyboard on press"
 
         onPressed: {
+            GlobalStates.superReleaseMightTrigger = false;
             GlobalStates.oskOpen = !GlobalStates.oskOpen;
         }
     }

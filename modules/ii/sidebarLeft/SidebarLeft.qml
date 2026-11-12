@@ -374,6 +374,7 @@ Scope { // Scope
         description: "Toggles left sidebar on press"
 
         onPressed: {
+            GlobalStates.superReleaseMightTrigger = false;
             GlobalStates.sidebarLeftOpen = !GlobalStates.sidebarLeftOpen;
         }
     }
@@ -383,6 +384,7 @@ Scope { // Scope
         description: "Opens left sidebar on press"
 
         onPressed: {
+            GlobalStates.superReleaseMightTrigger = false;
             GlobalStates.sidebarLeftOpen = true;
         }
     }
@@ -392,6 +394,7 @@ Scope { // Scope
         description: "Closes left sidebar on press"
 
         onPressed: {
+            GlobalStates.superReleaseMightTrigger = false;
             GlobalStates.sidebarLeftOpen = false;
         }
     }
@@ -401,6 +404,7 @@ Scope { // Scope
         description: "Detach left sidebar into a window/Attach it back"
 
         onPressed: {
+            GlobalStates.superReleaseMightTrigger = false;
             root.detach = !root.detach;
         }
     }

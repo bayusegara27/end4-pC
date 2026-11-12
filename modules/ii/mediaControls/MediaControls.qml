@@ -285,6 +285,7 @@ Scope {
         description: "Toggles media controls on press"
 
         onPressed: {
+            GlobalStates.superReleaseMightTrigger = false;
             GlobalStates.mediaControlsOpen = !GlobalStates.mediaControlsOpen;
         }
     }

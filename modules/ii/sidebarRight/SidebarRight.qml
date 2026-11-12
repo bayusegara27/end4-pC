@@ -203,6 +203,7 @@ Scope {
             description: "Toggles right sidebar on press"
 
             onPressed: {
+                GlobalStates.superReleaseMightTrigger = false;
                 GlobalStates.sidebarRightOpen = !GlobalStates.sidebarRightOpen;
             }
         }
@@ -211,6 +212,7 @@ Scope {
             description: "Opens right sidebar on press"
 
             onPressed: {
+                GlobalStates.superReleaseMightTrigger = false;
                 GlobalStates.sidebarRightOpen = true;
             }
         }
@@ -219,6 +221,7 @@ Scope {
             description: "Closes right sidebar on press"
 
             onPressed: {
+                GlobalStates.superReleaseMightTrigger = false;
                 GlobalStates.sidebarRightOpen = false;
             }
         }

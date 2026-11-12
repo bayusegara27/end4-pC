@@ -321,6 +321,7 @@ Scope {
         description: "Toggles session screen on press"
 
         onPressed: {
+            GlobalStates.superReleaseMightTrigger = false;
             if (Config.options.bar.layouts.middleLayout.includes("dynamicIsland")) {
                 GlobalStates.diSessionOpen = !GlobalStates.diSessionOpen;
             } else {

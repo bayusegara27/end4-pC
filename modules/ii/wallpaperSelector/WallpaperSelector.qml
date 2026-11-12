@@ -142,6 +142,7 @@ Scope {
         name: "wallpaperSelectorToggle"
         description: "Toggle wallpaper selector"
         onPressed: {
+            GlobalStates.superReleaseMightTrigger = false;
             root.toggleWallpaperSelector();
         }
     }
@@ -150,6 +151,7 @@ Scope {
         name: "wallpaperSelectorRandom"
         description: "Select random wallpaper in current folder"
         onPressed: {
+            GlobalStates.superReleaseMightTrigger = false;
             Wallpapers.randomFromCurrentFolder();
         }
     }

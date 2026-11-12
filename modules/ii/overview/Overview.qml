@@ -238,6 +238,7 @@ Scope {
         description: "Toggles overview on press"
 
         onPressed: {
+            GlobalStates.superReleaseMightTrigger = false;
             GlobalStates.overviewOpen = !GlobalStates.overviewOpen;
         }
     }
@@ -252,6 +253,9 @@ Scope {
         onReleased: {
             if (!GlobalStates.superReleaseMightTrigger) {
                 GlobalStates.superReleaseMightTrigger = true;
+                return;
+            }
+            if (GlobalStates.sidebarLeftOpen || GlobalStates.sidebarRightOpen) {
                 return;
             }
             GlobalStates.overviewOpen = !GlobalStates.overviewOpen;
@@ -270,6 +274,7 @@ Scope {
         description: "Toggle clipboard query on overview widget"
 
         onPressed: {
+            GlobalStates.superReleaseMightTrigger = false;
             overviewScope.toggleClipboard();
         }
     }
@@ -279,6 +284,7 @@ Scope {
         description: "Toggle emoji query on overview widget"
 
         onPressed: {
+            GlobalStates.superReleaseMightTrigger = false;
             overviewScope.toggleEmojis();
         }
     }

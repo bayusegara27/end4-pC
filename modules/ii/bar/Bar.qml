@@ -315,6 +315,7 @@ Scope {
         description: "Toggles bar on press"
 
         onPressed: {
+            GlobalStates.superReleaseMightTrigger = false;
             GlobalStates.barOpen = !GlobalStates.barOpen;
         }
     }
